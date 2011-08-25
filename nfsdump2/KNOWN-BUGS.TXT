@@ -1,0 +1,12 @@
+CURRENT:
+
+	- The output for READDIRP3 is untested, because I can't figure
+		out how to get FreeBSD 4.10 to use readdirp for
+		anything.  If you rely on it, please test that it
+		makes sense, and doesn't dump core.
+
+Prior to 9/9/2003:
+
+	- the size in the setattr call had its bytes reversed.
+
+

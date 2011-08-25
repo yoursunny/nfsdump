@@ -1,0 +1,164 @@
+# $Id: host.tmplt,v 1.9 2007/04/17 21:11:28 ellard Exp $
+#
+# Copyright (c) 2002-2003 by the President and Fellows of Harvard
+# College.  All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that:  (1) source code
+# distributions retain the above copyright notice and this paragraph
+# in its entirety, (2) distributions including binary code include
+# the above copyright notice and this paragraph in its entirety in
+# the documentation or other materials provided with the
+# distribution, and (3) all advertising materials mentioning features
+# or use of this software display the following acknowledgement: 
+# ``This product includes software developed by the Harvard
+# University, and its contributors.'' Neither the name of the
+# University nor the names of its contributors may be used to endorse
+# or promote products derived from this software without specific
+# prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+# IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+#
+# Daniel Ellard
+#
+# Generic template for nfs-logger.pl and nfs-zipper.pl.
+#
+# EDIT AS NEEDED, ACCORDING TO THE INSTRUCTIONS.  Pay particular
+# attention to the required parameters, but everything is worth a
+# look.
+#
+# General instructions:  USE ABSOLUTE PATHS!  Relative paths can fail
+# in some of the scripts, because they're not always run in the
+# directory that you might expect.
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# REQUIRED PARAMETERS:  The following parameters need to be editted
+# for every data collection source.  There really aren't sensible
+# defaults, so they are initially undefined.
+
+# LogName is the name with which to tag all the data collected.  It is
+# used as part of the name of the name of each log file (along with
+# the date).  It could be just the name of the NFS server being
+# monitored, or something more specific (for example, if the server
+# has several network interfaces, it might include the name of the
+# interface, etc).  Please use a descriptive name (ie your hostname or
+# domain).  DO NOT use a name that contains spaces, periods or /.
+#
+# RootDir is used as the basis for the paths to all the other files. 
+# The default way to set things up to create a base directory and
+# define the other paths in terms of this base.  If you don't like
+# this, you can override the defaults.  See below for more info.
+
+$LogName			= undef;
+$RootDir			= undef;
+
+# OPTIONAL PARAMETERS:  You might need to set these, depending on your
+# configuration.
+#
+# DeviceName is the name of the ethernet device to sniff.  If there is
+# only one network interface on your system, then you can leave this
+# undefined.
+#
+# MTUlength is the maximum ethernet frame size permitted on your
+# network.  The standard size is 1500, but some switches and cards
+# support larger sizes, typically 9000 (although even larger is
+# possible).  IF YOU GET THIS TOO LOW, YOU WILL LOSE INFORMATION! 
+# Note that you might need to ifconfig the network interface also in
+# order to access anything larger than 1500.  Also note that on some
+# systems, setting the MTUlength larger than the actual MTU can cause
+# problems, so we can't simply use a default of 9000.
+
+$DeviceName			= undef;
+$MTUlength			= 1500;
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# THE FOLLOWING DEFAULTS ARE REASONABLE FOR MOST PURPOSES (but may be
+# wrong for your system, so you should read the documentation anyway).
+#
+# DataDir is the name of the directory into which the log files are
+# put.  Note-- for busy servers, the data collection can gobble up a
+# lot of space over time (especially if the anonymizer/zipper job
+# falls behind for some reason).  For busy systems, put this on a
+# partitition with at least 10 gigs available, if possible.
+#
+# ProgDir is the directory where the programs and scripts are
+# installed.  (If there is more than one, you can override the paths
+# where needed for each specific prog.)
+
+$DataDir		= "$RootDir/data";
+
+$ProgDir		= "$RootDir/scripts";
+$nfsDumpProgName	= "$ProgDir/nfsdump";
+
+$nfsDumpProgArgs	= "-s $MTUlength";
+if (defined $DeviceName) {
+	$nfsDumpProgArgs .= " -i $DeviceName";
+}
+
+# nfsDumpFilter is the packet filter predicate passed to nfsdump.  See
+# the docs for tcpdump for more info, and test your predicate (with
+# tcpdump or by using nfsdump directly) to make sure that it is right! 
+# By default, it just grabs all NFS RPC packets it sees-- generally
+# you want to narrow things down a little more, i.e. something like
+# "port 2049 and host XXX and not host YYY" where XXX is the NFS
+# server's IP or hostname, and YYY is the IP or hostname of a host you
+# want to ignore (such as the logging host).  If you're sniffing on
+# the port that leads directly to the server, then you probably don't
+# need to change the default unless there are hosts that you
+# specifically want to exclude from the trace.
+
+$nfsDumpFilter		= "port 2049";
+
+# LogInterval is the number of minutes per logfile.  Generally 60. 
+# although larger or smaller numbers can make sense in some contexts. 
+# For "typical" (100Mbit ethernet) NFS servers, hour-long logs are a
+# goodish size, but for very busy servers shorter can be better.
+#
+# LifeTime is the total number of minutes to collect per run.  It
+# should be (roughly) divisible by LogInterval.  The default is one
+# week.  NOTE:  the logger can get confused by things like clock
+# drift, so to make sure that there are never two nfsdump processes
+# running at the same time, it's safest to shave off a minute.
+
+$LogInterval		= 60;
+$LifeTime		= (7 * 24 * 60) - 1;	# One week
+
+# If DoAnonymization is non-zero, then the system does anonymization
+# of the logs during the tracing.  This places a large load on the
+# trace host, so the anonymization is usually done in a separate step
+# by another process.
+#
+# If DoAnonymization is not FALSE, then the zipper will run the
+# anonymizer over the data before zipping it, and then delete the
+# original (unanonymized) data.  Note that the anonymizer needs to
+# keep some state between runs (so that if it seems the same filename
+# twice, for example, it will anonymize it the same way both times). 
+# By default it tucks this in to a subdirectory of the DataDir, but
+# you can move it elsewhere.
+#
+# NOTE:  if possible, keep AnonDBdir on a local file system. 
+# Otherwise, it will run slowly because DB over NFS is slow.  It
+# should be somewhere persistent (not /tmp) because losing the
+# anonymization database is fatal.
+
+$DoAnonymization	= 0;
+$AnonDBdir		= "$DataDir/AnonDB";
+
+# GZIPprog/GUNZIPprog are the paths to gzip/gunzip.  These paths are
+# right for most systems, but if they're wrong for yours, go ahead and
+# add the necessary definition.  Typically gunzip is just gzip -d, and
+# I assume that here. 
+
+if ( -x "/usr/bin/gzip" ) {
+	$GZIPprog	= "/usr/bin/gzip";
+}
+elsif ( -x "/usr/local/bin/gzip" ) {
+	$GZIPprog	= "/usr/local/bin/gzip";
+}
+
+$GUNZIPprog	= "$GZIPprog -d";
+
+1;
+

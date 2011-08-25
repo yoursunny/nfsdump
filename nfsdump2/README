@@ -1,0 +1,38 @@
+README for nfsdump version 1.2.0a, dated 3/12/2007.
+
+This is an ALPHA release!
+
+- It has not been tested on many platforms.
+
+- Some new functionality has not been tested for correctness.
+
+Please double-check the results carefully and let me know if you have
+any problems.
+
+NEW FEATURES:
+
+1.2.0:
+
+	1.  Cleaned up portability problems (constructs flagged by
+		-Wall, -pedantic).  Changed to use standard libraries
+		in a few places.  Removed dead code no longer
+		referenced.
+
+		3/12/2007:  These changes are not believed to make any
+		noticeable difference.
+
+	2.  Added functionality to decode and print the contents of
+		READDIR3 and READDIRP3 responses. 
+
+		3/12/2007:  THIS FUNCTIONALITY IS STILL LARGELY
+		UNTESTED FOR READDIRP3.  Your assistance in checking
+		that it actually works on your platform is
+		appreciated.
+
+	3.  Added functionality to proper anonymize the contents of
+		READDIR3 and READDIRP3 responses.
+
+	4.  Changed the anonymizer to anonymize fileid's, since on
+		some systems this is simply the inode number.
+
+

@@ -1,0 +1,121 @@
+Copyright (c) 2002-2003 by the President and Fellows of Harvard College.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that:  (1) source code
+distributions retain the above copyright notice and this paragraph
+in its entirety, (2) distributions including binary code include the
+above copyright notice and this paragraph in its entirety in the
+documentation or other materials provided with the distribution, and
+(3) all advertising materials mentioning features or use of this
+software display the following acknowledgement:  ``This product
+includes software developed by the Harvard University, and its
+contributors.'' Neither the name of the University nor the names of
+its contributors may be used to endorse or promote products derived
+from this software without specific prior written permission.
+ 
+THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+- - - - - - - - - - - - - - - - - - - -
+
+This is a description of the basic nfsdump trace format.
+
+All numbers are in hex except dates and times (which just look
+really odd in hex for some reason).  Also note that file handles are
+unparsed; each kind of server has their own way of encoding them and
+nfsdump doesn't try to decode any of them.
+
+Each request or response is represented by a single line.  The
+response to a call might not immediately follow the call.  In fact,
+not all calls have responses at all (we see calls that don't make it
+all the way to the server, and some of the responses from the server
+die due to network congestion before we see them).
+
+The first eight fields are the same for both calls and responses:
+
+1.  Time (seconds.microseconds) when the packet was seen.
+
+	Due to a misconfiguration of the clock on the EECS lair62
+	monitor, sometimes time will suddenly jump backwards for
+	five minutes for a few moments.  This seems to happen about
+	once a week.  Unfortunately I didn't notice this in time to
+	do anything about it.
+
+2.  Source address (iaddr.port)
+
+3.  Destination address (iaddr.port)
+
+4.  Transport protocol (U=udp, T=tcp).  From the original traces
+	(2001-2003) the lair packets are UDP and all the FAS packets
+	are TCP.
+
+5.  NFS RPC protocol version and direction.  (C3 = nfs v3 call, R3 =
+	nfs v3 response, C2 = nfs v2 call, R2 = nfs v2 call).
+
+6.  RPC XID field.
+
+7.  RPC function (numeric value).  This is redundant with field 8.
+
+8.  RPC function (canonical name).  For example, getattr, lookup,
+	read, write, ...
+
+For responses only, the ninth field is the return value, which is
+	either OK (aka RPC return code 0) or the numeric value if
+	non-zero.
+
+Then, there are a bunch of name/value pairs.  The names correspond
+to the names of the XDR fields.  For example
+
+	...  ftype 2 mode 1ed nlink 2 ...
+
+Indicates that the ftype field had a value of 2, mode was 1ed, and
+nlink was 2.
+
+For situations where there might be more than one instance of the
+same structure in a call or response, the names for the second have
+a "2" appended.  For example, rename has "fh", "name", "fh2" and
+"name2".
+
+For situations where there might be any number of instances of the
+same field name (for example, for readdir and readdirp responses),
+the names have -%u appended where the value ranges from 0 to N-1
+(where N is the number of entries).  [Note:  these fields are
+optional and can appear only in versions 1.2.0 or later.]
+
+For responses, the last 10 tokens on each line are debugging info
+that you should ignore.  For calls, the last 6 tokens on each line
+are debugging info that you should ignore.  (some day we'll delete
+this, but doing so will break a million scripts, so it's just not
+worth the trouble)
+
+NOTE-- in some very rare cases (and never in the EECS network), a
+line will end in the word JUMBO or LONGPACKET.  When this happens,
+it indicates that an obscure protocol situation has been detected. 
+When this happens, remove this token and then parse the rest of the
+line as-is.
+
+A few packets from the fas3/fas4 traces also have the string "SHORT
+PACKET" where the response code should be (and sometimes this string
+is embedded in other strings).  These packets will not parse
+correctly and should be ignored.
+
+KNOWN BUGS:
+
+- In early traces, the acc field in NFSv3 access calls was written
+	as a single letter (X for execute, R for read, etc).  This
+	didn't work when there was more than one bit set in the acc
+	field!
+
+	Recent traces use a hex number to print the bits from the
+	call.
+
+- In some traces, the size field of the NFSv3 setattr calls were
+	written in wrong-endian format:  the hi and low 32 bits were
+	exchanged.  The only way to recognize this is that the size
+	is gigantic, and ends (usually) in 7 or 8 zeros.
+
+	This was fixed in the collector 9/9/03 so future traces
+	should be correct.
+

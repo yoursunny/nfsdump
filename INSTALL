@@ -1,0 +1,111 @@
+# Daniel Ellard (dan@ellard.org)
+
+INSTALLATION INSTRUCTIONS FOR VERSION 1.20b OF NFSDUMP
+
+If you have any problems with the installation, contact me and let me
+know what happened, including useful context such as your OS name and
+version, text of the error messages.  To get in touch with me, send
+email to dan@ellard.org.
+
+NOTE:  you do not need privileges in order to configure or install
+	this software, but on most systems you need to be root or sudo
+	(or some other user with sufficient privilege to access the
+	raw Ethernet device) in order to run it.
+
+NOTE: lines that begin with $ are commands for you to type.
+
+Prerequisites: you must have libpcap installed on your system.
+
+To install the nfsdump and the related scripts:
+
+1.  Choose and create the install directory
+
+	Note that this program will typically run as root, so put it
+	somewhere that root can access and isn't seteuid to some other
+	user. 
+
+	If you use the default parameters, the install directory will
+	also be used to store the data gathered by nfsdump, and this
+	can be rather large.  Note that if the install directory is
+	mounted over NFS, then the traces you gather will include
+	traces of writing the traces files, with is something you
+	probably don't want to do!  Try to use a local file system.
+
+	Let INSTALLDIR be the name of the directory you will use
+	for the installation.
+
+	If using SourceForge, then download the repository:
+
+	$ git clone git://git.code.sf.net/p/nfsdump/code INSTALLDIR
+	$ cd INSTALLDIR
+
+	Otherwise, if using an old tarball, untar the distribution in
+	this directory:
+
+	$ mkdir -p INSTALLDIR ; cd INSTALLDIR
+	$ gunzip -c dist-120a.tgz | tar xf -
+
+	This should create two subdirectories, named nfsdump2 scripts,
+	and several files.
+
+2.  Configure nfsdump
+
+	$ cd nfsdump2
+	$ ./configure
+
+	If this succeeds then go to step 3.  Otherwise, continue this
+	step.  Note that this step will fail if your system does not
+	have the necessary libraries installed, but that doesn't
+	necessarily mean trouble.  If it fails, try the following:
+
+3.  In the nfsdump2 directory, build nfsdump.  If the build is
+	successful, then install it (putting it in ../scripts).
+
+	$ make
+	$ make install
+
+	NOTE:  some portability problems have surfaced, having to do
+		with differences between rpcgen on different systems. 
+		I've tried to fix them for all the systems I have; if
+		you have a problem, let me know.  (Please send me
+		patches if you have a problem and figure out how to
+		fix it.)
+
+4.  [OPTIONAL] In the scripts directory, test nfsdump:
+
+	Run the following command in the nfsdump2 directory:
+
+	$ cd ../scripts
+	$ sudo ./nfsdump -s400 port 2049
+
+	You should see long lines like the following, if your server
+	is busy:
+
+	1033793535.405200 8cf73e33.0801 8cf73e6f.0345 T R3 45ab2313 6
+	read OK ftype 1 mode 120 nlink 1 uid 1d1 gid 185a size 511b6a
+	used 514000 rdev 0 rdev2 0 fsid d6000061a9 fileid 4459 atime
+	1033793535.400001 mtime 1006264103.132004 ctime
+	1016679489.820059 count 2000 eof 0 status=0 pl = 8292 con = 98
+	len = 198
+
+	NOTE:  there is a bug somewhere that causes the program to
+	    crash under some versions of Solaris if the snaplen is too
+	    small, and the default is too small.  Hence the -s400. 
+
+	NOTE:  if you have more than one Ethernet interface, then you
+		need to specify which one to use, via the -i flag. 
+
+	If nothing appears on your screen, and you're sure that
+	there's some NFS traffic on that interface, then more
+	debugging will be needed.  If you have tcpdump or tshark, try
+	running it on the same interface, and see if it detects
+	anything.
+
+5.  Set up your local script config files.
+
+	You can run nfsdump by hand, but it is usually more convenient
+	to run it via the nfs-logger.pl script (in the script
+	directory).  To set up the configuration files for the
+	scripts, cd into the scripts directory and follow the
+	directions in the INSTALL file.
+
