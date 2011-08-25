@@ -17,7 +17,7 @@
 #  WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
 #  MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 #
-# @(#) $Header: /Users/ellard/nfsdump/nfsdump2/RCS/Makefile.in,v 1.1 2009/12/03 14:11:36 ellard Exp ellard $ (LBL)
+# @(#) $Header: /home/syrah/sos/CVS/sos/Tracer/nfsdump2/Makefile.in,v 1.3 2007/03/20 18:40:53 ellard Exp $ (LBL)
 
 #
 # Various configurable paths (remember to edit Makefile.in, not Makefile)
@@ -33,7 +33,7 @@ VPATH = @srcdir@
 
 CC = @CC@
 PROG = nfsdump
-CCOPT = @V_CCOPT@ -W -Wall 
+CCOPT = @V_CCOPT@
 INCLS = -I. @V_INCLS@
 DEFS = @DEFS@
 
@@ -59,7 +59,7 @@ INSTALL_DATA = @INSTALL_DATA@
 
 CSRC = nfsdump.c machdep.c \
 	util.c gmt2local.c setsignal.c \
-	nfsrecord.c
+	nfsrecord.c nfs_v3.c nfs_v2.c nfs_prot_xdr.c
 
 LOCALSRC = @LOCALSRC@
 GENSRC = version.c
@@ -69,16 +69,23 @@ SRC =	$(CSRC) $(GENSRC)
 
 OBJ	= $(SRC:.c=.o) $(LIBOBJS)
 
-CLEANFILES = $(PROG) $(OBJ) $(GENSRC)
+CLEANFILES = $(PROG) $(OBJ) $(GENSRC) \
+	nfs_prot_xdr.c nfs_prot.h nfs_prot_svc.c nfs_prot_clnt.c
 
 all: $(PROG)
 
 install: $(PROG)
 	cp $(PROG) ../scripts ; chmod 755 ../scripts/$(PROG)
 
-$(PROG): $(OBJ) @V_PCAPDEP@
+$(PROG): nfs_prot.h nfs_prot_xdr.c $(OBJ) @V_PCAPDEP@
 	@rm -f $@
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ) $(LIBS)
+
+nfs_prot_xdr.c:	nfs_prot.x
+	rpcgen -DWANT_NFS3 nfs_prot.x
+
+nfs_prot.h:	nfs_prot.x
+	rpcgen -DWANT_NFS3 nfs_prot.x
 
 getnameinfo.o: $(srcdir)/missing/getnameinfo.c
 	$(CC) $(CFLAGS) -o $@ -c $(srcdir)/missing/getnameinfo.c
@@ -100,9 +107,9 @@ strlcpy.o: $(srcdir)/missing/strlcpy.c
 version.o: version.c
 	$(CC) $(CFLAGS) -c version.c
 
-version.c: $(srcdir)/VERSION
+version.c: $(srcdir)/../VERSION
 	@rm -f $@
-	sed -e 's/.*/char version[] = "&";/' $(srcdir)/VERSION > $@
+	sed -e 's/.*/char version[] = "&";/' $(srcdir)/../VERSION > $@
 
 clean:
 	rm -f $(CLEANFILES)
