@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl5
 #
 # $Id: nfs-zipper.pl,v 1.10 2007/04/17 21:11:28 ellard Exp $
 #

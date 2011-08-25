@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl5 -w
 #
 # $Id: anonymize.pl,v 1.5 2007/04/17 21:11:28 ellard Exp $
 #
