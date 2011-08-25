@@ -24,11 +24,11 @@ static const char copyright[] =
     "@(#) Copyright (c) 1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997\n\
 The Regents of the University of California.  All rights reserved.\n";
 static const char rcsid[] =
-    "@(#) $Header: /Users/ellard/nfsdump/nfsdump2/RCS/nfsdump.c,v 1.1 2009/12/03 14:11:40 ellard Exp ellard $ (LBL)";
+    "@(#) $Header: /home/syrah/sos/CVS/sos/Tracer/nfsdump2/nfsdump.c,v 1.7 2007/03/15 18:34:35 ellard Exp $ (LBL)";
 #endif
 
 /*
- * nfsdump - monitor nfs traffic on an Ethernet.
+ * nfsdump - monitor nfs traffic on an ethernet.
  *
  * First written (as tcpdump) in 1987 by Van Jacobson, Lawrence
  * Berkeley Laboratory.  Mercilessly hacked and occasionally improved
@@ -143,9 +143,7 @@ lookup_printer(int type)
 			return p->f;
 
 	error("unknown data link type %d", type);
-
 	/* NOTREACHED */
-	return NULL;
 }
 
 static pcap_t *pd;
@@ -337,6 +335,9 @@ main(int argc, char **argv)
 
 	if (tflag > 0)
 		thiszone = gmt2local(0);
+
+	nfs_v3_stat_init (&v3statsBlock);
+	nfs_v2_stat_init (&v2statsBlock);
 
 	if (RFileName != NULL) {
 		/*
@@ -624,6 +625,38 @@ static int printSummary (char *ofilename)
 	else {
 		qs = fopen (ofilename, "w+");
 	}
+
+	if (qs != NULL) {
+		nfs_v3_stat_print (&v3statsBlock, qs);
+		fprintf (qs, "\n");
+		nfs_v2_stat_print (&v2statsBlock, qs);
+
+		fprintf (qs, "\n");
+		if (pcap_stats(pd, &stat) < 0) {
+			fprintf(qs, "pcap_stats: %s\n", pcap_geterr(pd));
+		}
+		else {
+			fprintf(qs, "%d packets received by filter\n",
+					stat.ps_recv);
+			fprintf(qs, "%d packets dropped by kernel\n",
+					stat.ps_drop);
+		}
+
+
+		{
+			extern int xidHashElemCnt;
+
+			fprintf (qs, "%d elems in xidHashTable.\n",
+					xidHashElemCnt);
+		}
+
+		if (qs != stdout) {
+			fclose (qs);
+		}
+	}
+
+	nfs_v3_stat_init (&v3statsBlock);
+	nfs_v2_stat_init (&v2statsBlock);
 
 	return (0);
 }

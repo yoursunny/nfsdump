@@ -22,8 +22,10 @@
  */
 
 /*
- * $Id: nfsrecord.h,v 1.1 2009/12/03 14:11:40 ellard Exp ellard $
+ * $Id: nfsrecord.h,v 1.5 2007/03/15 18:34:35 ellard Exp $
  */
+
+#include "nfs_prot.h"
 
 typedef	struct	nfs_v3_stat_t {
 	unsigned long	c3_total, r3_total;
@@ -88,6 +90,10 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid, u_int32_t *p,
 		u_int32_t payload_len, u_int32_t actual_len,
 		nfs_v3_stat_t *stats);
 
+int nfs_v3_print_resp (u_int32_t op, u_int32_t xid, u_int32_t *p,
+		u_int32_t payload_len, u_int32_t actual_len,
+		nfsstat3 status, nfs_v3_stat_t *stats);
+
 u_int32_t *print_fh3 (u_int32_t *p, u_int32_t *e, int print);
 u_int32_t *print_sattr3 (u_int32_t *p, u_int32_t *e, int print);
 u_int32_t *print_fn3 (u_int32_t *p, u_int32_t *e, int print);
@@ -126,6 +132,10 @@ u_int32_t *print_wcc_data3 (u_int32_t *p, u_int32_t *e, int print);
 int nfs_v2_print_call (u_int32_t op, u_int32_t xid,
 		u_int32_t *p, u_int32_t payload_len, u_int32_t actual_len,
 		nfs_v2_stat_t *stats);
+
+int nfs_v2_print_resp (u_int32_t op, u_int32_t xid,
+		u_int32_t *p, u_int32_t len, u_int32_t actual_len,
+		nfsstat status, nfs_v2_stat_t *stats);
 
 u_int32_t *print_fh2 (u_int32_t *p, u_int32_t *e, int print, char *fh_str);
 u_int32_t *print_sattr2 (u_int32_t *p, u_int32_t *e, int print);

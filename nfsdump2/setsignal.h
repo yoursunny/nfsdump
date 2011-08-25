@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /Users/ellard/nfsdump/nfsdump2/RCS/setsignal.h,v 1.1 2009/12/03 14:11:41 ellard Exp ellard $ (LBL)
+ * @(#) $Header: /home/lair/sos/CVS/sos/Tracer/nfsdump2/setsignal.h,v 1.1 2002/10/05 03:57:52 ellard Exp $ (LBL)
  */
 #ifndef setsignal_h
 #define setsignal_h

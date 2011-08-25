@@ -1,6 +1,6 @@
 #!/bin/csh -f
 #
-# $Id: manager.sh,v 1.1 2009/12/03 14:11:39 ellard Exp ellard $
+# $Id: manager.sh,v 1.2 2007/01/05 16:28:56 ellard Exp $
 #
 # Copyright (c) 2002-2003 by the President and Fellows of Harvard
 # College.  All rights reserved.

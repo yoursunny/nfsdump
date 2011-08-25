@@ -71,6 +71,13 @@ To install the nfsdump and the related scripts:
 		patches if you have a problem and figure out how to
 		fix it.)
 
+	NOTE: some systems have a different nfs_prot.x, and the local
+		one should always be used.  If you have problems with
+		some of the NFS protocol structs or constants not
+		being defined, then find your local nfs_prot.x (usually
+		in /usr/include/rpcsvc/ or a similar location) and
+		copy it into the nfsdump2 directory and build again.
+
 4.  [OPTIONAL] In the scripts directory, test nfsdump:
 
 	Run the following command in the nfsdump2 directory:

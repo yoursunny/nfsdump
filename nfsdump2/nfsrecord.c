@@ -22,7 +22,7 @@
  */
 
 /*
- * $Id: nfsrecord.c,v 1.1 2009/12/03 14:11:40 ellard Exp ellard $
+ * $Id: nfsrecord.c,v 1.12 2007/02/22 02:00:26 ellard Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -68,40 +68,50 @@ typedef	struct	{
 	u_int32_t	secs, usecs;		/* timestamp */
 	u_int32_t	srcHost, dstHost;	/* IP of src and dst hosts */
 	u_int32_t	srcPort, dstPort;	/* ports... */
-	u_int32_t	ipLen;
-	char		ipProto;
+	u_int32_t	rpcXID;
+
+						/* these can probably be squished a bunch. */
+	u_int32_t	rpcCall, nfsVersion, nfsProc;
+	u_int32_t	rpcStatus;
+
+	/*
+	 * So far-- 11 uint32's replace 14 uint32's + verif + time
+	 */
+
+	/* some buffer for the payload. */
+
 } nfs_pkt_t;
-
-void printPacketHeader(nfs_pkt_t *h, FILE *out)
-{
-
-	fprintf(out, "%u.%.6u", h->secs, h->usecs);
-
-	fprintf(out, " %u.%u.%u.%u",
-		0xff & (h->srcHost >> 24), 0xff & (h->srcHost >> 16),
-		0xff & (h->srcHost >>  8), 0xff & (h->srcHost >>  0));
-	
-	fprintf(out, " -> %u.%u.%u.%u %d",
-		0xff & (h->dstHost >> 24), 0xff & (h->dstHost >> 16),
-		0xff & (h->dstHost >>  8), 0xff & (h->dstHost >>  0),
-		h->dstPort);
-
-	fprintf(out, " %.8x %.8x %5u", h->srcHost, h->dstHost, h->dstPort);
-
-	fprintf(out, " %5u %c\n", h->ipLen, h->ipProto);
-
-	return ;
-}
-
 
 void packetPrinter (u_char *user, struct pcap_pkthdr *h, u_char *pp);
 int processPacket (struct pcap_pkthdr *h, u_char *pp, nfs_pkt_t *record);
+void printRecord (nfs_pkt_t *record, void *xdr, u_int32_t payload_len,
+		u_int32_t proto, u_int32_t actual_len);
+void printHostIp (u_int32_t ipa);
 int getEtherHeader (u_int32_t packet_len,
-		u_char *bp, unsigned int *proto, u_int32_t *len);
-int getIpHeader (struct ip *ip_b, unsigned int *proto, u_int32_t *len,
+		u_char *bp, unsigned int *proto, unsigned int *len);
+int getIpHeader (struct ip *ip_b, unsigned int *proto, unsigned int *len,
 		u_int32_t *src, u_int32_t *dst);
 int getTcpHeader (struct tcphdr *tcp_b);
 int getUdpHeader (struct udphdr *udp_b);
+int getRpcHeader (struct rpc_msg *rpc_b, u_int32_t *dir, u_int32_t maxlen,
+		int32_t *euid, int32_t *egid);
+int getData (u_char *bp, u_char *buf, unsigned int maxlen);
+
+int hashInsertXid (u_int32_t currTime, u_int32_t xid,
+		u_int32_t host, u_int32_t port,
+		u_int32_t version, u_int32_t proc);
+
+hash_t *hashLookupXid (u_int32_t now,
+		u_int32_t xid, u_int32_t host, u_int32_t port);
+
+static int get_auth (u_int32_t *ui, int32_t *euid, int32_t *egid);
+
+#define	HASHSIZE	3301
+#define	HASH(x,h,p)	(((x) % HASHSIZE + (h) % HASHSIZE + (p) % HASHSIZE) \
+				% HASHSIZE)
+
+static	hash_t	*xidHashTable [HASHSIZE];
+	int	xidHashElemCnt	= 0;
 
 void packetPrinter (u_char *user, struct pcap_pkthdr *h, u_char *pp)
 {
@@ -133,15 +143,19 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 	struct	ip	*ip_b		= NULL;
 	struct	tcphdr	*tcp_b		= NULL;
 	struct	udphdr	*udp_b		= NULL;
+	struct  rpc_msg	*rpc_b		= NULL;
 	u_int32_t	tot_len		= h->caplen;
 	u_int32_t	consumed	= 0;
 	u_int32_t	src_port	= 0;
 	u_int32_t	dst_port	= 0;
-	int	e_len, i_len, h_len;
+	u_int32_t	payload_len	= 0;
+	int	e_len, i_len, h_len, rh_len;
 	u_int32_t	rpc_len;
 	unsigned int	length;
 	u_int32_t srcHost, dstHost;
 	unsigned int proto;
+	u_int32_t dir;
+	unsigned int cnt;
 
 	if (OutFile == NULL) {
 		OutFile = stdout;
@@ -188,8 +202,6 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 		return (-2);
 	}
 
-	record->ipLen = length;
-
 	consumed += i_len;
 
 	/*
@@ -227,7 +239,6 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 
 		src_port = ntohs (tcp_b->th_sport);
 		dst_port = ntohs (tcp_b->th_dport);
-		record->ipProto = 'T';
 
 	}
 	else if (proto == IPPROTO_UDP) {
@@ -250,7 +261,6 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 		dst_port = ntohs (udp_b->uh_dport);
 
 		rpc_len = tot_len - consumed;
-		record->ipProto = 'U';
 
 	}
 	else {
@@ -276,12 +286,290 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 	record->dstHost	= dstHost;
 	record->srcPort	= src_port;
 	record->dstPort	= dst_port;
-	record->ipLen   = length;
 
-	printPacketHeader(record, stdout);
+	/* 
+	 * The tricky thing is that it might actually contain several
+	 * encapsulated RPC messages.
+	 */
 
-	return 0;
+/* 	fprintf (OutFile, "XX start loop\n"); */
 
+	cnt = 0;
+	while (consumed < tot_len) {
+		int32_t euid, egid;
+		int print_it;
+
+		cnt++;
+		euid = egid = -1;
+
+		/*
+		 * If it's RPC over TCP, then the length of the rest
+		 * of the RPC is given next.
+		 *
+		 * skip over the RPC length header, but save a copy
+		 * for later use.
+		 *
+		 * &&& Note that the high-order bit is always set in
+		 * the RPC length field.  This gives us a tiny extra
+		 * sanity check, if we ever want it.
+		 */
+
+		if (proto == IPPROTO_TCP) {
+			rpc_len = ntohl (*(u_int32_t *)(pp + consumed));
+			rpc_len &= 0x7fffffff;
+
+			consumed += sizeof (u_int32_t);
+		}
+
+		rpc_b = (struct rpc_msg *) (pp + consumed);
+		rh_len = getRpcHeader (rpc_b, &dir, tot_len - consumed,
+				&euid, &egid);
+		if (rh_len == 0) {
+			if (cnt > 1) {
+				fprintf (OutFile,
+					"XX rh_len == 0, cnt = %d\n", cnt);
+			}
+			return (0);
+		}
+		else if (rh_len < 0) {
+/* 			fprintf (OutFile, "XX cnt = %d\n", cnt); */
+			return (-5);
+		}
+
+		consumed += rh_len;
+
+		if (consumed == tot_len && dir == CALL && 
+				ntohl (rpc_b->ru.RM_cmb.cb_proc) == NFSPROC_NULL) {
+
+			/* It's a NULL RPC; do nothing */
+			continue;
+		}
+
+		if (consumed >= tot_len) {
+/* 			fprintf (OutFile, "XX truncated payload %d >= tot_len %d\n", */
+/* 					consumed, tot_len); */
+			goto end;
+		}
+
+/* 		fprintf (OutFile, "XX good (cnt = %d)\n", cnt); */
+		print_it = 1;
+
+		if (dir == CALL) {
+			record->rpcCall		= CALL;
+			record->rpcXID		= ntohl (rpc_b->rm_xid);
+			record->nfsVersion	= ntohl (rpc_b->ru.RM_cmb.cb_vers);
+			record->nfsProc		= ntohl (rpc_b->ru.RM_cmb.cb_proc);
+			hashInsertXid (record->secs, record->rpcXID,
+					record->srcHost, record->srcPort,
+					record->nfsVersion, record->nfsProc);
+		}
+		else {
+			hash_t *p;
+			u_int32_t accepted;
+			u_int32_t acceptStatus;
+
+			record->rpcCall		= REPLY;
+			record->rpcXID		= ntohl (rpc_b->rm_xid);
+
+			/*
+			 * If the RPC was not accepted, dump it.
+			 */
+
+			accepted = ntohl (rpc_b->rm_reply.rp_stat);
+			acceptStatus = ntohl (*(u_int32_t *) (pp + consumed));
+			if (accepted != 0 || acceptStatus != 0) {
+/* 				fprintf (OutFile, */
+/* 						"XX not accepted (%x, %x)\n", */
+/* 						accepted, acceptStatus); */
+				print_it = 0;
+			}
+
+			/*
+			 * If we see an XID we've never seen before,
+			 * print an "unknown" record.  Note that we
+			 * don't know the actual NFS version -- we
+			 * just assume that it is v3.  Since we can't
+			 * decode the payload anyway, it doesn't
+			 * matter very much what version of the
+			 * protocol it was.
+			 *
+			 * You need to take all of the "unknown"
+			 * responses with a grain of salt, because
+			 * they might be complete garbage.
+			 *
+			 * NOTE:  this is a new feature!  Before
+			 * 3/23/03, unmatched responses would simply
+			 * be dumped.
+			 */
+
+			p = hashLookupXid (record->secs, record->rpcXID,
+					record->dstHost, record->dstPort);
+			if (p == NULL) {
+/* 				fprintf (OutFile, "XX response without call\n"); */
+				print_it = 1;
+				record->nfsVersion	= 3;
+				record->nfsProc		= -1;
+				record->rpcStatus	= ntohl (*(u_int32_t *)
+					(pp + e_len + i_len + h_len + rh_len +
+						sizeof (u_int32_t)));
+			}
+			else {
+				record->nfsVersion	= p->nfsVersion;
+				record->nfsProc		= p->nfsProc;
+				record->rpcStatus	= ntohl (*(u_int32_t *)
+					(pp + e_len + i_len + h_len + rh_len +
+						sizeof (u_int32_t)));
+				free (p);
+			}
+
+			/*
+			 * Treat the accept_status and call_status
+			 * as part of the RPC header, for replies.
+			 */
+
+			rh_len += 2 * sizeof (u_int32_t);
+			consumed += 2 * sizeof (u_int32_t);
+		}
+
+		/*
+		 * The payload is everything left in the packet except
+		 * the rpc header.
+		 */
+
+		payload_len = rpc_len - rh_len;
+
+		/*
+		if (payload_len + consumed > tot_len) {
+			fprintf (OutFile, "XX too long, must ignore! %d > %d\n",
+					payload_len + consumed, tot_len);
+		}
+		*/
+
+		if (print_it) {
+			printRecord (record, (void *) (pp + consumed),
+					payload_len, proto,
+					tot_len - consumed);
+
+			if (euid != -1 && egid != -1) {
+				fprintf (OutFile, "euid %x egid %x ",
+						euid, egid);
+			}
+
+			fprintf (OutFile, "con = %d len = %d",
+					consumed,
+					payload_len + consumed > tot_len ?
+						tot_len : payload_len + consumed);
+
+			/* For debugging purposes: */
+			if (tot_len > payload_len + consumed) {
+				fprintf (OutFile, " LONGPKT-%d ",
+						tot_len - (payload_len + consumed));
+			}
+
+			/*
+			 * Used to check here to see if the
+			 * payload_len + consumed was greater than
+			 * tot_len, but this is just wrong for TCP,
+			 * where the payload might be spread out over
+			 * several IP datagrams.
+			 */
+
+#ifdef	COMMENT
+			if (payload_len + consumed > tot_len) {
+				fprintf (OutFile, " +++");
+			}
+#endif	/* COMMENT */
+
+			fprintf (OutFile, "\n");
+		}
+
+		consumed += payload_len;
+
+/* 		fprintf (OutFile, "XX consumed = %d, tot_len = %d\n", consumed, tot_len); */
+
+	}
+
+/* 	fprintf (OutFile, "XX end loop\n"); */
+end:
+	/* fprintf (OutFile, "END %d\n", cnt); */
+
+	return (1);
+}
+
+/*
+ * payload_len is the length that the RPC header claimed was the
+ * total length of the message, and actual_len is the number of bytes
+ * actually snarfed.  Sometimes it's OK if the actual_len is less
+ * than the payload len (for example, if it's a read response, or
+ * a write request; we don't care about the data) but it's definately
+ * a sign that there might be trouble.  This needs to be caught
+ * much later, down in the routines to actually carve up the packets.
+ */
+
+void printRecord (nfs_pkt_t *record, void *xdr, u_int32_t payload_len,
+		u_int32_t proto, u_int32_t actual_len)
+{
+	u_int32_t *dp = xdr;
+
+	fprintf (OutFile, "%u.%.6u ", record->secs, record->usecs);
+	printHostIp (record->srcHost);
+	fprintf (OutFile, ".%.4x ", 0xffff & record->srcPort);
+	printHostIp (record->dstHost);
+	fprintf (OutFile, ".%.4x ", 0xffff & record->dstPort);
+
+	fprintf (OutFile, "%c ", proto == IPPROTO_TCP ? 'T' : 'U');
+
+	if (record->rpcCall == CALL) {
+		if (record->nfsVersion == 3) {
+			nfs_v3_print_call (record->nfsProc, record->rpcXID,
+					dp, payload_len, actual_len,
+					&v3statsBlock);
+		}
+		else if (record->nfsVersion == 2) {
+			nfs_v2_print_call (record->nfsProc, record->rpcXID,
+					dp, payload_len, actual_len,
+					&v2statsBlock);
+		}
+		else {
+			fprintf (OutFile, "CU%d\n", record->nfsVersion);
+		}
+	}
+	else {
+		if (record->nfsVersion == 3) {
+			nfs_v3_print_resp (record->nfsProc, record->rpcXID,
+					dp, payload_len, actual_len,
+					record->rpcStatus,
+					&v3statsBlock);
+		}
+		else if (record->nfsVersion == 2) {
+			nfs_v2_print_resp (record->nfsProc, record->rpcXID,
+					dp, payload_len, actual_len,
+					record->rpcStatus,
+					&v2statsBlock);
+		}
+		else {
+			fprintf (OutFile, "RU%d\n", record->nfsVersion);
+		}
+
+		fprintf (OutFile, "status=%x ", record->rpcStatus);
+
+		fprintf (OutFile, "pl = %d ", payload_len);
+	}
+
+	return ;
+}
+
+void printHostIp (u_int32_t ipa)
+{
+
+	if (vflag) {
+		fprintf (OutFile, "%u.%u.%u.%u",
+				0xff & (ipa >> 24), 0xff & (ipa >> 16),
+				0xff & (ipa >> 8), 0xff & (ipa >> 0));
+	}
+	else {
+		fprintf (OutFile, "%.8x", ipa);
+	}
 }
 
 /*
@@ -383,6 +671,275 @@ int getUdpHeader (struct udphdr *udp_b)
 {
 
 	return (8);
+}
+
+#define	NFS_PROGRAM	100003
+#define	RPC_VERSION	2
+
+int getRpcHeader (struct rpc_msg *bp, u_int32_t *dir_p, u_int32_t maxlen,
+		int32_t *euid, int32_t *egid)
+{
+	int cred_len, verf_len;
+	u_int32_t *ui, *auth_base;
+	u_int32_t rh_len;
+	u_int32_t dir;
+	u_int32_t *max_ptr;
+	int rc;
+
+	max_ptr = (u_int32_t *) bp;
+	max_ptr += (maxlen / sizeof (u_int32_t));
+
+	*dir_p = dir = ntohl (bp->rm_direction);
+
+	if (dir == CALL) {
+		if ((ntohl (bp->ru.RM_cmb.cb_rpcvers) != RPC_VERSION) ||
+			(ntohl (bp->ru.RM_cmb.cb_prog) != NFS_PROGRAM)) {
+			return (-1);
+		}
+
+		/*
+		 * Need to skip over all the credentials and
+		 * verification fields.  The nuisance is figuring out
+		 * how long these fields are, since they do not have a
+		 * fixed size.
+		 *
+		 * Note that we must depart from using the rpc_msg
+		 * structure here, because it doesn't know how big
+		 * these structs are either.  It just uses an opaque
+		 * reference to get at them, after they've been
+		 * parsed.  Since I see things in an unparsed state, I
+		 * need to actually do the calculation.
+		 *
+		 * Note that the credentials and verifier are
+		 * word-aligned, so we can't just add up cred_len and
+		 * verf_len and always get the right answer.  Instead,
+		 * we need to round them both up.  It's easier to just
+		 * do some pointer arithmetic at the end.
+		 */
+
+		ui = (u_int32_t *) &bp->rm_call.cb_cred;
+		auth_base = ui;
+
+		/*
+		 * &&& Can also add sanity checks; there are limits on
+		 * the possible lengths for the cred and the verifier!
+		 */
+
+		if ((ui + 1) >= max_ptr) {
+/* 			fprintf (OutFile, "XX cut-off RPC header (cred)\n"); */
+			return (-1);
+		}
+
+		cred_len = ntohl (ui [1]);
+
+		auth_base = ui;
+
+		ui += (cred_len + (2 * sizeof (*ui) + 3)) / sizeof (*ui);
+
+		if ((ui + 1) >= max_ptr) {
+/* 			fprintf (OutFile, "XX cut-off RPC header (verif)\n"); */
+			return (-1);
+		}
+
+		rc = get_auth (auth_base, euid, egid);
+		if (rc != 0) {
+			return (-1);
+		}
+
+		verf_len = ntohl (ui [1]);
+
+		ui += (verf_len + (2 * sizeof (*ui) + 3)) / sizeof (*ui);
+
+		rh_len = (4 * (ui - (u_int32_t *) bp));
+
+	}
+	else if (dir == REPLY) {
+
+		/*
+		 * Like the CALL case, but uglier because of potential
+		 * alignment problems; can't use very much of the
+		 * reply struct as-is.
+		 */
+
+		ui = ((u_int32_t *) &bp->rm_reply) + 1;
+
+		if ((ui + 1) >= max_ptr) {
+/* 			fprintf (OutFile, */
+/* 				"XX cut-off RPC reply header (verif)\n"); */
+			return (-1);
+		}
+
+		verf_len = ntohl (ui [1]);
+
+		ui += (verf_len + (2 * sizeof (*ui) + 3)) / sizeof (*ui);
+
+		rh_len = 4 * (ui - (u_int32_t *) bp);
+
+	}
+	else {
+		/* Doesn't look like an RPC header: punt. */
+		return (-1);
+	}
+
+	return (rh_len);
+}
+
+static int get_auth (u_int32_t *ui, int32_t *euid, int32_t *egid)
+{
+	unsigned int *pi;
+	unsigned int len;
+
+	/*
+	 * If the auth type isn't UNIX, then just give up.
+	 *
+	 * &&& Could also check to make sure that the length fields
+	 * are something sensible, as an extra sanity check.
+	 */
+
+	if (ntohl (ui [0]) != AUTH_UNIX) {
+		printf ("XX Not Auth_Unix (%ld)??\n", ntohl (ui [0]));
+		return (-1);
+	}
+
+	/*
+	 * For UNIX, ui[1] is the total length of the auth and ui[2]
+	 * is some kind of cookie.  ui[3] is the length of the next
+	 * field, which doesn't seem to be well documented anywhere. 
+	 * Set pi to point past this opaque field.  Then pi[0] is the
+	 * euid, pi[1] is the egid, and pi[2] is the total number of
+	 * groups.  At some point we might be interested in the total
+	 * number of groups, and what they all are, but not today.
+	 */
+
+	len = ntohl (ui [3]);
+	if (len % 4) {
+		len /= 4;
+		len++;
+	}
+	else {
+		len /= 4;
+	}
+
+	pi = &ui [4 + len];
+
+	if (euid != NULL)
+		*euid = ntohl (pi [0]);
+
+	if (egid != NULL)
+		*egid = ntohl (pi [1]);
+
+	return (0);
+}
+
+int getData (u_char *bp, u_char *buf, unsigned int maxlen)
+{
+	return (0);
+}
+
+/*
+ * Returns a pointer to the hash_t structure for the given xid (or
+ * NULL if any) and removes it from the hash table.  Doesn't free the
+ * pointer-- it is the responsibility of the caller to free it after
+ * use.
+ */
+
+#define	MAX_AGE		30
+
+hash_t *hashLookupXid (u_int32_t now,
+		u_int32_t xid, u_int32_t host, u_int32_t port)
+{
+	u_int32_t hashval;
+	hash_t *curr, **prev_p;
+
+	/*
+	 * Heuristic-- as long as the current time is less
+	 * than the GRACE_PERIOD (typically a few moments after
+	 * the start of tracing, but it could also be set to
+	 * the end of time...), accept anything without even looking.
+	 *
+	 * The reason is that XIDs pairs can easily get split over
+	 * trace boundaries and we don't want to lose any replies just
+	 * because we might have put the request into another file.
+	 *
+	 * NOT IMPLEMENTED YET!
+	 */
+
+
+	/*
+	 * Otherwise, search the table.  If the XID is found, remove
+	 * it; there should only be one entry corresponding to each
+	 * XID so we won't be seeing it again.
+	 */
+
+	hashval = HASH (xid, host, port);
+	prev_p = &xidHashTable [hashval];
+	for (curr = xidHashTable [hashval]; curr != NULL; curr = curr->next) {
+		if ((curr->rpcXID == xid) && (curr->srcHost == host) &&
+				(curr->srcPort == port)) {
+			*prev_p = curr->next;
+			xidHashElemCnt--;
+			return (curr);
+		}
+		prev_p = &curr->next;
+	}
+
+
+	return (NULL);
+}
+
+/*
+ * There are a lot more fields, and they're important, but for now I'm
+ * ignoring them.
+ */
+
+int hashInsertXid (u_int32_t now, u_int32_t xid,
+		u_int32_t host, u_int32_t port,
+		u_int32_t version, u_int32_t proc)
+{
+	static int CullIndex = 0;
+	u_int32_t then;
+	u_int32_t hashval = HASH (xid, host, port);
+	hash_t *new = (hash_t *) malloc (sizeof (hash_t));
+	hash_t *curr, *next, *old;
+
+	new->rpcXID = xid;
+	new->srcHost = host;
+	new->srcPort = port;
+	new->nfsVersion = version;
+	new->nfsProc = proc;
+	new->call_time = now;
+
+	new->next = xidHashTable [hashval];
+	xidHashTable [hashval] = new;
+
+	xidHashElemCnt++;
+
+	/*
+	 * HACK ALERT!
+	 *
+	 * Due to dropped packets, some requests never get responses. 
+	 * This causes the table to leak.  To make sure that
+	 * eventually all the garbage has a chance to be collected,
+	 * every time we do a lookup, we pick a hash bucket to cull. 
+	 * In order to prevent garbage from hiding, we cull a
+	 * different bucket each time, working our way around the
+	 * whole table.
+	 */
+
+	then = now - MAX_AGE;
+	for (curr = xidHashTable [CullIndex]; curr != NULL; curr = next) {
+		next = curr->next;
+
+		if (curr->call_time < then) {
+			old = hashLookupXid (now, curr->rpcXID, curr->srcHost,
+					curr->srcPort);
+			assert (old != NULL);
+			free (old);
+		}
+	}
+	CullIndex = (CullIndex + 1) % HASHSIZE;
+
+	return (0);
 }
 
 /*

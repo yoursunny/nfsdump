@@ -21,7 +21,7 @@
 
 #ifndef lint
 static const char rcsid[] =
-    "@(#) $Header: /Users/ellard/nfsdump/nfsdump2/RCS/gmt2local.c,v 1.1 2009/12/03 14:11:38 ellard Exp ellard $ (LBL)";
+    "@(#) $Header: /home/lair/sos/CVS/sos/Tracer/nfsdump2/gmt2local.c,v 1.1 2002/10/05 03:57:46 ellard Exp $ (LBL)";
 #endif
 
 #ifdef HAVE_CONFIG_H

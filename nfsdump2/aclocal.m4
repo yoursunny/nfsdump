@@ -1,4 +1,4 @@
-dnl @(#) $Header: /Users/ellard/nfsdump/nfsdump2/RCS/aclocal.m4,v 1.1 2009/12/03 14:11:36 ellard Exp ellard $ (LBL)
+dnl @(#) $Header: /home/syrah/sos/CVS/sos/Tracer/nfsdump2/aclocal.m4,v 1.2 2007/01/05 15:45:13 ellard Exp $ (LBL)
 dnl
 dnl Copyright (c) 1995, 1996, 1997, 1998
 dnl	The Regents of the University of California.  All rights reserved.

@@ -18,7 +18,7 @@
  * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  *
- * @(#) $Header: /Users/ellard/nfsdump/nfsdump2/RCS/interface.h,v 1.1 2009/12/03 14:11:39 ellard Exp ellard $ (LBL)
+ * @(#) $Header: /home/lair/sos/CVS/sos/Tracer/nfsdump2/interface.h,v 1.1 2002/10/05 03:57:47 ellard Exp $ (LBL)
  */
 
 #ifndef tcpdump_interface_h

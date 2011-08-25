@@ -1,4 +1,4 @@
-/* @(#) $Header: /Users/ellard/nfsdump/nfsdump2/RCS/ip.h,v 1.1 2009/12/03 14:11:39 ellard Exp ellard $ (LBL) */
+/* @(#) $Header: /home/lair/sos/CVS/sos/Tracer/nfsdump2/ip.h,v 1.1 2002/10/05 03:57:47 ellard Exp $ (LBL) */
 /*
  * Copyright (c) 1982, 1986, 1993
  *	The Regents of the University of California.  All rights reserved.
