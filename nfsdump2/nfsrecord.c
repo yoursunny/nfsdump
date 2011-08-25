@@ -324,6 +324,7 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 		rpc_b = (struct rpc_msg *) (pp + consumed);
 		rh_len = getRpcHeader (rpc_b, &dir, tot_len - consumed,
 				&euid, &egid);
+		
 		if (rh_len == 0) {
 			if (cnt > 1) {
 				fprintf (OutFile,
@@ -352,7 +353,6 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 		}
 
 /* 		fprintf (OutFile, "XX good (cnt = %d)\n", cnt); */
-		print_it = 1;
 
 		if (dir == CALL) {
 			record->rpcCall		= CALL;
@@ -589,9 +589,15 @@ int getEtherHeader (u_int32_t packet_len,
 	unsigned int length = (bp [12] << 8) | bp [13];
 
 	/*
-	 * Look for either 802.3 or RFC 894:
+	 * Look for either VLAN 802.3 or RFC 894.
 	 *
-	 * if "length" <= OLD_ETHERMTU).  Note that we let the pcap
+	 * If the 12th and 13th bytes are 0x8100 then the packet 
+	 * is a VLAN tagged packet. Length of this VLAN info 
+	 * is 4 bytes. Everything gets shifted 4 bytes ahead
+	 * In this case, EtherHeader length is 18 bytes.
+	 * (Look at http://wiki.wireshark.org/VLAN for more information.)
+	 *
+	 * If "length" <= OLD_ETHERMTU.  Note that we let the pcap
 	 * library make the decision for jumbo frames-- pcap has
 	 * already calculated the apparent packet length, and if it
 	 * agrees with the 802.3 length field, and the next few fields
@@ -600,7 +606,13 @@ int getEtherHeader (u_int32_t packet_len,
 	 * no better way to tell the difference.
 	 */
 
-	if ((length <= ETHERMTU) || 
+	if (length == 0x8100) {
+		length = (bp [16] << 8) | bp [17];
+		*len = length;
+		*proto = (bp [20] << 8) | bp [21];
+		return (18);
+	}
+	else if ((length <= ETHERMTU) || 
 			(length == (packet_len - 22) &&	/* jumbo? */
 			(bp [14] == 0xAA) &&		/* DSAP */
 			(bp [15] == 0xAA) &&		/* SSAP */
@@ -797,7 +809,7 @@ static int get_auth (u_int32_t *ui, int32_t *euid, int32_t *egid)
 	 */
 
 	if (ntohl (ui [0]) != AUTH_UNIX) {
-		printf ("XX Not Auth_Unix (%ld)??\n", ntohl (ui [0]));
+		printf ("XX Not Auth_Unix (%u)??\n", ntohl (ui [0]));
 		return (-1);
 	}
 
@@ -806,6 +818,10 @@ static int get_auth (u_int32_t *ui, int32_t *euid, int32_t *egid)
 	 * is some kind of cookie.  ui[3] is the length of the next
 	 * field, which doesn't seem to be well documented anywhere. 
 	 * Set pi to point past this opaque field.  Then pi[0] is the
+	 * euid, pi[1] is the egid, and pi[2] is the total number of
+	 * groups.  At some point we might be interested in the total
+	 * number of groups, and what they all are, but not today.
+	 *
 	 * euid, pi[1] is the egid, and pi[2] is the total number of
 	 * groups.  At some point we might be interested in the total
 	 * number of groups, and what they all are, but not today.
