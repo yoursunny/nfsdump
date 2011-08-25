@@ -8,7 +8,7 @@ dnl
 
 AC_REVISION($Revision: 1.1 $)
 AC_PREREQ(2.13)
-AC_INIT(tcpdump.c)
+AC_INIT(nfsdump.c)
 
 AC_CANONICAL_SYSTEM
 
