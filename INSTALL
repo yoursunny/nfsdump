@@ -14,7 +14,11 @@ NOTE:  you do not need privileges in order to configure or install
 
 NOTE: lines that begin with $ are commands for you to type.
 
-Prerequisites: you must have libpcap installed on your system.
+Prerequisites: you MUST have libpcap installed on your system.
+	On some systems (i.e., linux), you will probably also
+	need the libpcap-dev package.  If you don't have
+	/usr/lib/libpcap.a (yes, a .a file, not a .so file) then
+	the configure is unlikely to work.
 
 To install the nfsdump and the related scripts:
 
