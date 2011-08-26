@@ -107,9 +107,9 @@ strlcpy.o: $(srcdir)/missing/strlcpy.c
 version.o: version.c
 	$(CC) $(CFLAGS) -c version.c
 
-version.c: $(srcdir)/../VERSION
+version.c: $(srcdir)/../VERSION Makefile
 	@rm -f $@
-	sed -e 's/.*/char version[] = "&";/' $(srcdir)/../VERSION > $@
+	grep ^VERSION $(srcdir)/../VERSION | sed -e 's/.*=[ \t]*//' -e 's/.*/char version[] = "&";/' > $@
 
 clean:
 	rm -f $(CLEANFILES)
