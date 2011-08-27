@@ -40,6 +40,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pcap.h>
+#include <inttypes.h>
 
 #include "interface.h"
 #include "ip.h"
@@ -920,7 +921,7 @@ u_int32_t *print_fh3 (u_int32_t *p, u_int32_t *e, int print)
 
 	if (print) {
 		for (i = 0; i < n_words; i++) {
-			fprintf (OutFile, "%.8lx", ntohl (p [i]));
+			fprintf (OutFile, "%.8" PRIx32, ntohl (p [i]));
 		}
 		fprintf (OutFile, " ");
 	}
@@ -1215,7 +1216,7 @@ u_int32_t *print_uint32 (u_int32_t *p, u_int32_t *e, int print, u_int32_t *val)
 	}
 
 	if (print) {
-		fprintf (OutFile, "%lx ", ntohl (*p));
+		fprintf (OutFile, "%" PRIx32 " ", ntohl (*p));
 	}
 
 	if (val != NULL) {
