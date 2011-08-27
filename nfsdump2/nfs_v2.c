@@ -40,6 +40,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pcap.h>
+#include <inttypes.h>
 
 #include "interface.h"
 #include "ip.h"
@@ -469,16 +470,16 @@ u_int32_t *print_sattr2 (u_int32_t *p, u_int32_t *e, int print)
 
 	if (print) {
 		if (ntohl (p [0]) != 0xffffffff) {
-			fprintf (OutFile, "mode %lx ", ntohl (p [0]));
+			fprintf (OutFile, "mode %" PRIx32 " ", ntohl (p [0]));
 		}
 		if (ntohl (p [1]) != 0xffffffff) {
-			fprintf (OutFile, "uid %lx ", ntohl (p [1]));
+			fprintf (OutFile, "uid %" PRIx32 " ", ntohl (p [1]));
 		}
 		if (ntohl (p [2]) != 0xffffffff) {
-			fprintf (OutFile, "gid %lx ", ntohl (p [2]));
+			fprintf (OutFile, "gid %" PRIx32 " ", ntohl (p [2]));
 		}
 		if (ntohl (p [3]) != 0xffffffff) {
-			fprintf (OutFile, "size %lx ", ntohl (p [3]));
+			fprintf (OutFile, "size %" PRIx32 " ", ntohl (p [3]));
 		}
 
 		/*
@@ -509,7 +510,7 @@ u_int32_t *print_nfstime2 (u_int32_t *p, u_int32_t *e, int print)
 	}
 
 	if (print) {
-		fprintf (OutFile, "%ld.%-6ld ", ntohl (p [0]), ntohl (p [1]));
+		fprintf (OutFile, "%" PRId32 ".%-6" PRId32 " ", ntohl (p [0]), ntohl (p [1]));
 	}
 
 	return (p + 2);
@@ -574,7 +575,7 @@ u_int32_t *print_opaque (u_int32_t *p, u_int32_t *e, int print, int n_words)
 
 	if (print) {
 		for (i = 0; i < n_words; i++) {
-			fprintf (OutFile, "%.8lx", ntohl (p [i]));
+			fprintf (OutFile, "%.8" PRIx32, ntohl (p [i]));
 		}
 		fprintf (OutFile, " ");
 	}
@@ -594,17 +595,17 @@ u_int32_t *print_fattr2 (u_int32_t *p, u_int32_t *e, int print)
 	}
 
 	if (print) {
-		fprintf (OutFile, "ftype %lx ", ntohl (p [0]));	/* ftype */
-		fprintf (OutFile, "mode %lx ", ntohl (p [1]));	/* mode */
-		fprintf (OutFile, "nlink %lx ", ntohl (p [2]));	/* nlink */
-		fprintf (OutFile, "uid %lx ", ntohl (p [3]));	/* uid */
-		fprintf (OutFile, "gid %lx ", ntohl (p [4]));	/* gid */
-		fprintf (OutFile, "size %lx ", ntohl (p [5]));	/* size */
-		fprintf (OutFile, "blksize %lx ", ntohl (p [6]));	/* blksize */
-		fprintf (OutFile, "rdev %lx ", ntohl (p [7]));	/* rdev */
-		fprintf (OutFile, "blocks %lx ", ntohl (p [8]));/* blocks */
-		fprintf (OutFile, "fsid %lx ", ntohl (p [9]));	/* fsid */
-		fprintf (OutFile, "fileid %lx ", ntohl (p [10]));	/* fileid */
+		fprintf (OutFile, "ftype %" PRIx32 " ", ntohl (p [0]));	/* ftype */
+		fprintf (OutFile, "mode %" PRIx32 " ", ntohl (p [1]));	/* mode */
+		fprintf (OutFile, "nlink %" PRIx32 " ", ntohl (p [2]));	/* nlink */
+		fprintf (OutFile, "uid %" PRIx32 " ", ntohl (p [3]));	/* uid */
+		fprintf (OutFile, "gid %" PRIx32 " ", ntohl (p [4]));	/* gid */
+		fprintf (OutFile, "size %" PRIx32 " ", ntohl (p [5]));	/* size */
+		fprintf (OutFile, "blksize %" PRIx32 " ", ntohl (p [6]));	/* blksize */
+		fprintf (OutFile, "rdev %" PRIx32 " ", ntohl (p [7]));	/* rdev */
+		fprintf (OutFile, "blocks %" PRIx32 " ", ntohl (p [8]));/* blocks */
+		fprintf (OutFile, "fsid %" PRIx32 " ", ntohl (p [9]));	/* fsid */
+		fprintf (OutFile, "fileid %" PRIx32 " ", ntohl (p [10]));	/* fileid */
 
 		fprintf (OutFile, "atime ");
 		print_nfstime2 (&p [11], e, print);	/* atime */
@@ -649,11 +650,11 @@ u_int32_t *print_statfsokres2 (u_int32_t *p, u_int32_t *e, int print)
 	}
 
 	if (print) {
-		fprintf (OutFile, "tsize %lx ", ntohl (p [0]));	/* tsize */
-		fprintf (OutFile, "bsize %lx ", ntohl (p [1]));	/* bsize */
-		fprintf (OutFile, "blocks %lx ", ntohl (p [2]));/* blocks */
-		fprintf (OutFile, "bfree %lx ", ntohl (p [3]));	/* bfree */
-		fprintf (OutFile, "bavail %lx ", ntohl (p [4]));/* bavail */
+		fprintf (OutFile, "tsize %" PRIx32 " ", ntohl (p [0]));	/* tsize */
+		fprintf (OutFile, "bsize %" PRIx32 " ", ntohl (p [1]));	/* bsize */
+		fprintf (OutFile, "blocks %" PRIx32 " ", ntohl (p [2]));/* blocks */
+		fprintf (OutFile, "bfree %" PRIx32 " ", ntohl (p [3]));	/* bfree */
+		fprintf (OutFile, "bavail %" PRIx32 " ", ntohl (p [4]));/* bavail */
 	}
 
 	return (p + 5);
