@@ -1,0 +1,9 @@
+*.o
+nfsdump
+nfsdump2/config.*
+nfsdump2/Makefile
+nfsdump2/nfs_prot.h
+nfsdump2/nfs_prot_clnt.c
+nfsdump2/nfs_prot_svc.c
+nfsdump2/nfs_prot_xdr.c
+nfsdump2/version.c
