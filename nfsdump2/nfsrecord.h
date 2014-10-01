@@ -26,6 +26,12 @@
  */
 
 #include "nfs_prot.h"
+#include "mount_prot.h"
+
+/* base procedure number for MOUNT protocol */
+#define MOUNT_PROC_BASE 100
+/* pretend MNT is a NFS procedure */
+#define NFSPROC3_MNT (MOUNT_PROC_BASE + MOUNTPROC3_MNT)
 
 typedef	struct	nfs_v3_stat_t {
 	unsigned long	c3_total, r3_total;
@@ -51,6 +57,7 @@ typedef	struct	nfs_v3_stat_t {
 	unsigned long 	c3_fsinfo, r3_fsinfo;
 	unsigned long 	c3_pathconf, r3_pathconf;
 	unsigned long 	c3_commit, r3_commit;
+	unsigned long 	c3_mnt, r3_mnt;
 	unsigned long 	c3_unknown, r3_unknown;
 } nfs_v3_stat_t;
 

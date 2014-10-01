@@ -359,6 +359,9 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 			record->rpcXID		= ntohl (rpc_b->rm_xid);
 			record->nfsVersion	= ntohl (rpc_b->ru.RM_cmb.cb_vers);
 			record->nfsProc		= ntohl (rpc_b->ru.RM_cmb.cb_proc);
+			if (ntohl (rpc_b->ru.RM_cmb.cb_prog) == MOUNT_PROGRAM) {
+			    record->nfsProc += MOUNT_PROC_BASE;
+			}
 			hashInsertXid (record->secs, record->rpcXID,
 					record->srcHost, record->srcPort,
 					record->nfsVersion, record->nfsProc);
@@ -686,6 +689,7 @@ int getUdpHeader (struct udphdr *udp_b)
 }
 
 #define	NFS_PROGRAM	100003
+#define MOUNT_PROGRAM 100005
 #define	RPC_VERSION	2
 
 int getRpcHeader (struct rpc_msg *bp, u_int32_t *dir_p, u_int32_t maxlen,
@@ -704,8 +708,9 @@ int getRpcHeader (struct rpc_msg *bp, u_int32_t *dir_p, u_int32_t maxlen,
 	*dir_p = dir = ntohl (bp->rm_direction);
 
 	if (dir == CALL) {
+	    uint32_t rpc_program = ntohl (bp->ru.RM_cmb.cb_prog);
 		if ((ntohl (bp->ru.RM_cmb.cb_rpcvers) != RPC_VERSION) ||
-			(ntohl (bp->ru.RM_cmb.cb_prog) != NFS_PROGRAM)) {
+			(rpc_program != NFS_PROGRAM && rpc_program != MOUNT_PROGRAM)) {
 			return (-1);
 		}
 

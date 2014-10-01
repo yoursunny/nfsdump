@@ -517,6 +517,20 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		break;
 	}
 
+	case NFSPROC3_MNT : {
+		dirpath args;
+		args = BigBuf0;
+
+		stats->c3_mnt++;
+		fprintf (OutFile, "%-8s ", "mnt");
+
+		if ((got_all = xdr_dirpath (&xdr, &args)) != 0) {
+			print_string (args, strlen(args));
+		}
+
+		break;
+	}
+
 	default :
 		fprintf (OutFile, "unknown ");
 		rc = -1;
@@ -848,6 +862,16 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 			PRINT_STATUS (status, 1);
 			new_p = print_wcc_data3 (p, e, 1);
 			/* skip the rest */
+			break;
+
+		case NFSPROC3_MNT :
+			stats->r3_mnt++;
+			fprintf (OutFile, "%-8s ", "mnt");
+			PRINT_STATUS (status, 1);
+			if (status == MNT3_OK) {
+				fprintf (OutFile, "fh ");
+				new_p = print_fh3 (p, e, 1);
+			}
 			break;
 
 		default :
@@ -1671,6 +1695,8 @@ void nfs_v3_stat_print (nfs_v3_stat_t *p, FILE *out)
 			compute_pct (p->c3_fsinfo, p->c3_total));
 	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "mknod", p->c3_mknod, p->r3_mknod,
 			compute_pct (p->c3_mknod, p->c3_total));
+	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "mnt", p->c3_mnt, p->r3_mnt,
+			compute_pct (p->c3_mnt, p->c3_total));
 	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "null", p->c3_null, p->r3_null,
 			compute_pct (p->c3_null, p->c3_total));
 	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "commit", p->c3_commit, p->r3_commit,

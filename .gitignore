@@ -6,4 +6,8 @@ nfsdump2/nfs_prot.h
 nfsdump2/nfs_prot_clnt.c
 nfsdump2/nfs_prot_svc.c
 nfsdump2/nfs_prot_xdr.c
+nfsdump2/mount_prot.h
+nfsdump2/mount_prot_clnt.c
+nfsdump2/mount_prot_svc.c
+nfsdump2/mount_prot_xdr.c
 nfsdump2/version.c

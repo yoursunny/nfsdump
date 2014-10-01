@@ -59,7 +59,7 @@ INSTALL_DATA = @INSTALL_DATA@
 
 CSRC = nfsdump.c machdep.c \
 	util.c gmt2local.c setsignal.c \
-	nfsrecord.c nfs_v3.c nfs_v2.c nfs_prot_xdr.c
+	nfsrecord.c nfs_v3.c nfs_v2.c nfs_prot_xdr.c mount_prot_xdr.c
 
 LOCALSRC = @LOCALSRC@
 GENSRC = version.c
@@ -70,14 +70,15 @@ SRC =	$(CSRC) $(GENSRC)
 OBJ	= $(SRC:.c=.o) $(LIBOBJS)
 
 CLEANFILES = $(PROG) $(OBJ) $(GENSRC) \
-	nfs_prot_xdr.c nfs_prot.h nfs_prot_svc.c nfs_prot_clnt.c
+	nfs_prot_xdr.c nfs_prot.h nfs_prot_svc.c nfs_prot_clnt.c \
+	mount_prot_xdr.c mount_prot.h mount_prot_svc.c mount_prot_clnt.c
 
 all: $(PROG)
 
 install: $(PROG)
 	cp $(PROG) ../scripts ; chmod 755 ../scripts/$(PROG)
 
-$(PROG): nfs_prot.h nfs_prot_xdr.c $(OBJ) @V_PCAPDEP@
+$(PROG): nfs_prot.h nfs_prot_xdr.c mount_prot.h mount_prot_xdr.c $(OBJ) @V_PCAPDEP@
 	@rm -f $@
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $(OBJ) $(LIBS)
 
@@ -86,6 +87,12 @@ nfs_prot_xdr.c:	nfs_prot.x
 
 nfs_prot.h:	nfs_prot.x
 	rpcgen -DWANT_NFS3 nfs_prot.x
+
+mount_prot_xdr.c:	mount_prot.x
+	rpcgen mount_prot.x
+
+mount_prot.h:	mount_prot.x
+	rpcgen mount_prot.x
 
 getnameinfo.o: $(srcdir)/missing/getnameinfo.c
 	$(CC) $(CFLAGS) -o $@ -c $(srcdir)/missing/getnameinfo.c
