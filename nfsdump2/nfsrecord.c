@@ -458,7 +458,7 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 						euid, egid);
 			}
 
-			fprintf (OutFile, "con = %d len = %d",
+			fprintf (OutFile, "con=%d len=%d",
 					consumed,
 					payload_len + consumed > tot_len ?
 						tot_len : payload_len + consumed);
@@ -556,7 +556,7 @@ void printRecord (nfs_pkt_t *record, void *xdr, u_int32_t payload_len,
 
 		fprintf (OutFile, "status=%x ", record->rpcStatus);
 
-		fprintf (OutFile, "pl = %d ", payload_len);
+		fprintf (OutFile, "pl=%d ", payload_len);
 	}
 
 	return ;

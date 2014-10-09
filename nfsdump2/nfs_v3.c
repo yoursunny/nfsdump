@@ -107,12 +107,12 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 
 	stats->c3_total++;
 
-	fprintf (OutFile, "C3 %-8x %2x ", xid, op);
+	fprintf (OutFile, "C3 %08x %02x ", xid, op);
 
 	switch (op) {
 	case NFSPROC3_NULL :	/* OK */
 		stats->c3_null++;
-		fprintf (OutFile, "%-8s ", "null");
+		fprintf (OutFile, "%s ", "null");
 		break;
 
 	case NFSPROC3_GETATTR : { /* OK */
@@ -122,7 +122,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		bzero ((void *) &args, sizeof (args));
 		args.object.data.data_val = BigBuf0;
 
-		fprintf (OutFile, "%-8s ", "getattr");
+		fprintf (OutFile, "%s ", "getattr");
 
 		if ((got_all = xdr_GETATTR3args (&xdr, &args)) != 0) {
 			print_fh3_x (&args.object, "fh");
@@ -137,7 +137,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		bzero ((void *) &args, sizeof (args));
 		args.object.data.data_val = BigBuf0;
 
-		fprintf (OutFile, "%-8s ", "setattr");
+		fprintf (OutFile, "%s ", "setattr");
 
 		if ((got_all = xdr_SETATTR3args (&xdr, &args)) != 0) {
 			print_fh3_x (&args.object, "fh");
@@ -156,7 +156,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		args.what.dir.data.data_val = BigBuf0;
 		args.what.name = BigBuf1;
 
-		fprintf (OutFile, "%-8s ", "lookup");
+		fprintf (OutFile, "%s ", "lookup");
 
 		if ((got_all = xdr_LOOKUP3args (&xdr, &args)) != 0) {
 			print_diropargs3_x (&(args.what), "fh", "name");
@@ -172,7 +172,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		bzero ((void *) &args, sizeof (args));
 		args.object.data.data_val = BigBuf0;
 
-		fprintf (OutFile, "%-8s ", "access");
+		fprintf (OutFile, "%s ", "access");
 
 		if ((got_all = xdr_ACCESS3args (&xdr, &args)) != 0) {
 			print_fh3_x (&(args.object), "fh");
@@ -189,7 +189,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		bzero ((void *) &args, sizeof (args));
 		args.symlink.data.data_val = BigBuf0;
 
-		fprintf (OutFile, "%-8s ", "readlink");
+		fprintf (OutFile, "%s ", "readlink");
 
 		if ((got_all = xdr_READLINK3args (&xdr, &args)) != 0) {
 			print_fh3_x (&(args.symlink), "fh");
@@ -205,7 +205,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		bzero ((void *) &args, sizeof (args));
 		args.file.data.data_val = BigBuf0;
 
-		fprintf (OutFile, "%-8s ", "read");
+		fprintf (OutFile, "%s ", "read");
 
 		if ((got_all = xdr_READ3args (&xdr, &args)) != 0) {
 			print_fh3_x (&(args.file), "fh");
@@ -224,7 +224,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		stable_how how;
 
 		stats->c3_write++;
-		fprintf (OutFile, "%-8s ", "write");
+		fprintf (OutFile, "%s ", "write");
 
 		/*
 		 * We can't just gulp down the entire args to write,
@@ -262,7 +262,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		CREATE3args args;
 
 		stats->c3_create++;
-		fprintf (OutFile, "%-8s ", "create");
+		fprintf (OutFile, "%s ", "create");
 
 		bzero ((void *) &args, sizeof (args));
 		args.where.dir.data.data_val = BigBuf0;
@@ -280,7 +280,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		MKDIR3args args;
 
 		stats->c3_mkdir++;
-		fprintf (OutFile, "%-8s ", "mkdir");
+		fprintf (OutFile, "%s ", "mkdir");
 
 		bzero ((void *) &args, sizeof (args));
 		args.where.dir.data.data_val = BigBuf0;
@@ -299,7 +299,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		SYMLINK3args args;
 
 		stats->c3_symlink++;
-		fprintf (OutFile, "%-8s ", "symlink");
+		fprintf (OutFile, "%s ", "symlink");
 
 		bzero ((void *) &args, sizeof (args));
 		args.where.dir.data.data_val = BigBuf0;
@@ -325,7 +325,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		args.where.dir.data.data_val = BigBuf0;
 		args.where.name = BigBuf1;
 
-		fprintf (OutFile, "%-8s ", "mknod");
+		fprintf (OutFile, "%s ", "mknod");
 
 		if ((got_all = xdr_MKNOD3args (&xdr, &args)) != 0) {
 			print_diropargs3_x (&(args.where), "fh", "name");
@@ -344,7 +344,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		REMOVE3args args;
 
 		stats->c3_remove++;
-		fprintf (OutFile, "%-8s ", "remove");
+		fprintf (OutFile, "%s ", "remove");
 
 		bzero ((void *) &args, sizeof (args));
 		args.object.dir.data.data_val = BigBuf0;
@@ -361,7 +361,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		RMDIR3args args;
 
 		stats->c3_rmdir++;
-		fprintf (OutFile, "%-8s ", "rmdir");
+		fprintf (OutFile, "%s ", "rmdir");
 
 		bzero ((void *) &args, sizeof (args));
 		args.object.dir.data.data_val = BigBuf0;
@@ -378,7 +378,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		RENAME3args args;
 
 		stats->c3_rename++;
-		fprintf (OutFile, "%-8s ", "rename");
+		fprintf (OutFile, "%s ", "rename");
 
 		bzero ((void *) &args, sizeof (args));
 		args.from.dir.data.data_val = BigBuf0;
@@ -398,7 +398,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		LINK3args args;
 
 		stats->c3_link++;
-		fprintf (OutFile, "%-8s ", "link");
+		fprintf (OutFile, "%s ", "link");
 
 		bzero ((void *) &args, sizeof (args));
 		args.file.data.data_val = BigBuf0;
@@ -417,7 +417,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		READDIR3args args;
 
 		stats->c3_readdir++;
-		fprintf (OutFile, "%-8s ", "readdir");
+		fprintf (OutFile, "%s ", "readdir");
 
 		bzero ((void *) &args, sizeof (args));
 		args.dir.data.data_val = BigBuf0;
@@ -435,7 +435,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		READDIRPLUS3args args;
 
 		stats->c3_readdirp++;
-		fprintf (OutFile, "%-8s ", "readdirp");
+		fprintf (OutFile, "%s ", "readdirp");
 
 		bzero ((void *) &args, sizeof (args));
 		args.dir.data.data_val = BigBuf0;
@@ -454,7 +454,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		FSSTAT3args args;
 
 		stats->c3_fsstat++;
-		fprintf (OutFile, "%-8s ", "fsstat");
+		fprintf (OutFile, "%s ", "fsstat");
 
 		bzero ((void *) &args, sizeof (args));
 		args.fsroot.data.data_val = BigBuf0;
@@ -470,7 +470,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		FSINFO3args args;
 
 		stats->c3_fsinfo++;
-		fprintf (OutFile, "%-8s ", "fsinfo");
+		fprintf (OutFile, "%s ", "fsinfo");
 
 		bzero ((void *) &args, sizeof (args));
 		args.fsroot.data.data_val = BigBuf0;
@@ -487,7 +487,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		PATHCONF3args args;
 
 		stats->c3_pathconf++;
-		fprintf (OutFile, "%-8s ", "pathconf");
+		fprintf (OutFile, "%s ", "pathconf");
 
 		bzero ((void *) &args, sizeof (args));
 		args.object.data.data_val = BigBuf0;
@@ -503,7 +503,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		COMMIT3args args;
 
 		stats->c3_commit++;
-		fprintf (OutFile, "%-8s ", "commit");
+		fprintf (OutFile, "%s ", "commit");
 
 		bzero ((void *) &args, sizeof (args));
 		args.file.data.data_val = BigBuf0;
@@ -522,7 +522,7 @@ int nfs_v3_print_call (u_int32_t op, u_int32_t xid,
 		args = BigBuf0;
 
 		stats->c3_mnt++;
-		fprintf (OutFile, "%-8s ", "mnt");
+		fprintf (OutFile, "%s ", "mnt");
 
 		if ((got_all = xdr_dirpath (&xdr, &args)) != 0) {
 			print_string (args, strlen(args));
@@ -571,19 +571,19 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 	e = p + (actual_len / 4);
 
-	fprintf (OutFile, "R3 %8x %2x ", xid, op);
+	fprintf (OutFile, "R3 %08x %02x ", xid, op);
 
 	stats->r3_total++;
 
 	switch (op) {
 		case NFSPROC3_NULL :
 			stats->r3_null++;
-			fprintf (OutFile, "%-8s ", "null");
+			fprintf (OutFile, "%s ", "null");
 			break;
 
 		case NFSPROC3_GETATTR :
 			stats->r3_getattr++;
-			fprintf (OutFile, "%-8s ", "getattr");
+			fprintf (OutFile, "%s ", "getattr");
 			PRINT_STATUS (status, 1);
 			if (status == NFS3_OK) {
 				new_p = print_fattr3 (p, e, 1);
@@ -592,7 +592,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_SETATTR :
 			stats->r3_setattr++;
-			fprintf (OutFile, "%-8s ", "setattr");
+			fprintf (OutFile, "%s ", "setattr");
 			PRINT_STATUS (status, 1);
 			if (status == NFS3_OK) {
 				new_p = print_wcc_data3 (p, e, 1);
@@ -601,7 +601,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_LOOKUP :
 			stats->r3_lookup++;
-			fprintf (OutFile, "%-8s ", "lookup");
+			fprintf (OutFile, "%s ", "lookup");
 			PRINT_STATUS (status, 1);
 			if (status == NFS3_OK) {
 				fprintf (OutFile, "fh ");
@@ -613,7 +613,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_ACCESS :
 			stats->r3_access++;
-			fprintf (OutFile, "%-8s ", "access");
+			fprintf (OutFile, "%s ", "access");
 			PRINT_STATUS (status, 1);
 			new_p = print_post_op_attr3 (p, e, 0);
 			if (status == NFS3_OK) {
@@ -624,7 +624,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_READLINK :
 			stats->r3_readlink++;
-			fprintf (OutFile, "%-8s ", "readlink");
+			fprintf (OutFile, "%s ", "readlink");
 			PRINT_STATUS (status, 1);
 			new_p = print_post_op_attr3 (p, e, 0);
 			if (status == NFS3_OK) {
@@ -635,7 +635,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_READ :
 			stats->r3_read++;
-			fprintf (OutFile, "%-8s ", "read");
+			fprintf (OutFile, "%s ", "read");
 			PRINT_STATUS (status, 1);
 			new_p = print_post_op_attr3 (p, e, 1);
 			if (status == NFS3_OK) {
@@ -655,7 +655,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_WRITE :
 			stats->r3_write++;
-			fprintf (OutFile, "%-8s ", "write");
+			fprintf (OutFile, "%s ", "write");
 			PRINT_STATUS (status, 1);
 			new_p = print_wcc_data3 (p, e, 1);
 			if (status == NFS3_OK) {
@@ -669,7 +669,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_CREATE :
 			stats->r3_create++;
-			fprintf (OutFile, "%-8s ", "create");
+			fprintf (OutFile, "%s ", "create");
 			PRINT_STATUS (status, 1);
 			if (status == NFS3_OK) {
 				fputs ("fh ", OutFile);
@@ -684,7 +684,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_MKDIR :
 			stats->r3_mkdir++;
-			fprintf (OutFile, "%-8s ", "mkdir");
+			fprintf (OutFile, "%s ", "mkdir");
 			PRINT_STATUS (status, 1);
 			if (status == NFS3_OK) {
 				fputs ("fh ", OutFile);
@@ -696,7 +696,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_SYMLINK :
 			stats->r3_symlink++;
-			fprintf (OutFile, "%-8s ", "symlink");
+			fprintf (OutFile, "%s ", "symlink");
 			PRINT_STATUS (status, 1);
 			if (status == NFS3_OK) {
 				fputs ("fh ", OutFile);
@@ -708,7 +708,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_MKNOD :
 			stats->r3_mknod++;
-			fprintf (OutFile, "%-8s ", "mknod");
+			fprintf (OutFile, "%s ", "mknod");
 			PRINT_STATUS (status, 1);
 			if (status == NFS3_OK) {
 				fputs ("fh ", OutFile);
@@ -720,28 +720,28 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_REMOVE :
 			stats->r3_remove++;
-			fprintf (OutFile, "%-8s ", "remove");
+			fprintf (OutFile, "%s ", "remove");
 			PRINT_STATUS (status, 1);
 			new_p = print_wcc_data3 (p, e, 1);
 			break;
 
 		case NFSPROC3_RMDIR :
 			stats->r3_rmdir++;
-			fprintf (OutFile, "%-8s ", "rmdir");
+			fprintf (OutFile, "%s ", "rmdir");
 			PRINT_STATUS (status, 1);
 			new_p = print_wcc_data3 (p, e, 1);
 			break;
 
 		case NFSPROC3_RENAME :
 			stats->r3_rename++;
-			fprintf (OutFile, "%-8s ", "rename");
+			fprintf (OutFile, "%s ", "rename");
 			PRINT_STATUS (status, 1);
 			/* skip the rest */
 			break;
 
 		case NFSPROC3_LINK :
 			stats->r3_link++;
-			fprintf (OutFile, "%-8s ", "link");
+			fprintf (OutFile, "%s ", "link");
 			PRINT_STATUS (status, 1);
 			/* skip the rest */
 			break;
@@ -749,7 +749,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 		case NFSPROC3_READDIR : {
 
 			stats->r3_readdir++;
-			fprintf (OutFile, "%-8s ", "readdir");
+			fprintf (OutFile, "%s ", "readdir");
 			PRINT_STATUS (status, 1);
 
 			if (!omitReaddirContents && (status == NFS3_OK)) {
@@ -793,7 +793,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_READDIRPLUS : {
 			stats->r3_readdirp++;
-			fprintf (OutFile, "%-8s ", "readdirp");
+			fprintf (OutFile, "%s ", "readdirp");
 			PRINT_STATUS (status, 1);
 
 			if (!omitReaddirContents && (status == NFS3_OK)) {
@@ -837,28 +837,28 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_FSSTAT :
 			stats->r3_fsstat++;
-			fprintf (OutFile, "%-8s ", "fsstat");
+			fprintf (OutFile, "%s ", "fsstat");
 			PRINT_STATUS (status, 1);
 			/* skip the rest */
 			break;
 
 		case NFSPROC3_FSINFO :
 			stats->r3_fsinfo++;
-			fprintf (OutFile, "%-8s ", "fsinfo");
+			fprintf (OutFile, "%s ", "fsinfo");
 			PRINT_STATUS (status, 1);
 			/* skip the rest */
 			break;
 
 		case NFSPROC3_PATHCONF :
 			stats->r3_pathconf++;
-			fprintf (OutFile, "%-8s ", "pathconf");
+			fprintf (OutFile, "%s ", "pathconf");
 			PRINT_STATUS (status, 1);
 			/* skip the rest */
 			break;
 
 		case NFSPROC3_COMMIT :
 			stats->r3_commit++;
-			fprintf (OutFile, "%-8s ", "commit");
+			fprintf (OutFile, "%s ", "commit");
 			PRINT_STATUS (status, 1);
 			new_p = print_wcc_data3 (p, e, 1);
 			/* skip the rest */
@@ -866,7 +866,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 
 		case NFSPROC3_MNT :
 			stats->r3_mnt++;
-			fprintf (OutFile, "%-8s ", "mnt");
+			fprintf (OutFile, "%s ", "mnt");
 			PRINT_STATUS (status, 1);
 			if (status == MNT3_OK) {
 				fprintf (OutFile, "fh ");
@@ -875,7 +875,7 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 			break;
 
 		default :
-			fprintf (OutFile, "%-8s ", "unknown");
+			fprintf (OutFile, "%s ", "unknown");
 			break;
 
 	}
@@ -1646,60 +1646,60 @@ void nfs_v3_stat_init (nfs_v3_stat_t *p)
 void nfs_v3_stat_print (nfs_v3_stat_t *p, FILE *out)
 {
 
-	fprintf (out, "v3 %-8s  %12ld %12ld\n", "total",
+	fprintf (out, "v3 %s  %12ld %12ld\n", "total",
 			p->c3_total, p->r3_total);	
 
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d  %10.2fM\n", "read",
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d  %10.2fM\n", "read",
 			p->c3_read, p->r3_read,
 			compute_pct (p->c3_read, p->c3_total),
 			(double) p->r3_read_m + (p->r3_read_b / (1024.0 * 1024.0)));
 
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d  %10.2fM\n", "write",
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d  %10.2fM\n", "write",
 			p->c3_write, p->r3_write,
 			compute_pct (p->c3_write, p->c3_total),
 			(double) p->c3_write_m + (p->c3_write_b / (1024.0 * 1024.0)));
 
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "getattr", p->c3_getattr, p->r3_getattr,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "getattr", p->c3_getattr, p->r3_getattr,
 			compute_pct (p->c3_getattr, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "lookup", p->c3_lookup, p->r3_lookup,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "lookup", p->c3_lookup, p->r3_lookup,
 			compute_pct (p->c3_lookup, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "readdir", p->c3_readdir, p->r3_readdir,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "readdir", p->c3_readdir, p->r3_readdir,
 			compute_pct (p->c3_readdir, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "readdirp", p->c3_readdirp, p->r3_readdirp,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "readdirp", p->c3_readdirp, p->r3_readdirp,
 			compute_pct (p->c3_readdirp, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "fsstat", p->c3_fsstat, p->r3_fsstat,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "fsstat", p->c3_fsstat, p->r3_fsstat,
 			compute_pct (p->c3_fsstat, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "access", p->c3_access, p->r3_access,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "access", p->c3_access, p->r3_access,
 			compute_pct (p->c3_access, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "setattr", p->c3_setattr, p->r3_setattr,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "setattr", p->c3_setattr, p->r3_setattr,
 			compute_pct (p->c3_setattr, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "remove", p->c3_remove, p->r3_remove,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "remove", p->c3_remove, p->r3_remove,
 			compute_pct (p->c3_remove, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "create", p->c3_create, p->r3_create,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "create", p->c3_create, p->r3_create,
 			compute_pct (p->c3_create, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "readlink", p->c3_readlink, p->r3_readlink,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "readlink", p->c3_readlink, p->r3_readlink,
 			compute_pct (p->c3_readlink, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "mkdir", p->c3_mkdir, p->r3_mkdir,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "mkdir", p->c3_mkdir, p->r3_mkdir,
 			compute_pct (p->c3_mkdir, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "symlink", p->c3_symlink, p->r3_symlink,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "symlink", p->c3_symlink, p->r3_symlink,
 			compute_pct (p->c3_symlink, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "rmdir", p->c3_rmdir, p->r3_rmdir,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "rmdir", p->c3_rmdir, p->r3_rmdir,
 			compute_pct (p->c3_rmdir, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "rename", p->c3_rename, p->r3_rename,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "rename", p->c3_rename, p->r3_rename,
 			compute_pct (p->c3_rename, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "link", p->c3_link, p->r3_link,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "link", p->c3_link, p->r3_link,
 			compute_pct (p->c3_link, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "pathconf", p->c3_pathconf, p->r3_pathconf,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "pathconf", p->c3_pathconf, p->r3_pathconf,
 			compute_pct (p->c3_pathconf, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "fsinfo", p->c3_fsinfo, p->r3_fsinfo,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "fsinfo", p->c3_fsinfo, p->r3_fsinfo,
 			compute_pct (p->c3_fsinfo, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "mknod", p->c3_mknod, p->r3_mknod,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "mknod", p->c3_mknod, p->r3_mknod,
 			compute_pct (p->c3_mknod, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "mnt", p->c3_mnt, p->r3_mnt,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "mnt", p->c3_mnt, p->r3_mnt,
 			compute_pct (p->c3_mnt, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "null", p->c3_null, p->r3_null,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "null", p->c3_null, p->r3_null,
 			compute_pct (p->c3_null, p->c3_total));
-	fprintf (out, "v3 %-8s  %12ld %12ld %% %2d\n", "commit", p->c3_commit, p->r3_commit,
+	fprintf (out, "v3 %s  %12ld %12ld %% %2d\n", "commit", p->c3_commit, p->r3_commit,
 			compute_pct (p->c3_commit, p->c3_total));
 
 
