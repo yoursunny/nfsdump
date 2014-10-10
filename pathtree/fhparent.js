@@ -34,13 +34,17 @@ ExtractFhParent.prototype.processCall = function(row) {
     call.fh = params[1];
     call.name = params[3];
     break;
-  case 'create':
-  case 'mkdir':
-    call.fh = params[1];
-    call.name = params[3];
-    break;
   case 'readdirp':
     call.fh = params[1];
+    break;
+  case 'create':
+  case 'mkdir':
+  //case 'symlink':
+  //case 'link':
+  //case 'mknod':
+  //case 'rename':
+    call.fh = params[1];
+    call.name = params[3];
     break;
   default:
     logCall = false;
@@ -74,15 +78,31 @@ ExtractFhParent.prototype.processReply = function(row) {
       // TODO
     }
     break;
-  case 'create':
-  case 'mkdir':
-    if (status == 'OK') {
-      records.push({ fh:params[1], name:call.name, parent:call.fh });
-    }
-    break;
   case 'readdirp':
     if (status == 'OK') {
-      // TODO
+      var currentIndex = 0, currentName = '';
+      for (var i = 0; i < params.length - 1; i += 2) {
+        var key = params[i], value = params[i + 1];
+        if (key == 'name-' + currentIndex) {
+          currentName = value;
+        }
+        else if (key == 'fh-' + currentIndex) {
+          if (currentName != '.' && currentName != '..') {
+            records.push({ fh:value, name:currentName, parent:call.fh });
+          }
+          ++currentIndex;
+        }
+      }
+    }
+    break;
+  case 'create':
+  case 'mkdir':
+  //case 'symlink':
+  //case 'link':
+  //case 'mknod':
+  //case 'rename':
+    if (status == 'OK') {
+      records.push({ fh:params[1], name:call.name, parent:call.fh });
     }
     break;
   }
