@@ -6,6 +6,15 @@ var util = require('util');
 var stream = require('stream');
 var csv = require('csv');
 
+// [key1, value1, key2, value2, ...]
+Array.prototype.forEachKV = function(f) {
+  for (var i = 0; i < this.length - 1; i += 2) {
+    if (f(this[i], this[i + 1]) === false) {
+      return;
+    }
+  }
+};
+
 var OFFSET = {
   TIME:0,
   SRC:1,
@@ -39,13 +48,18 @@ ExtractFhParent.prototype.processCall = function(row) {
     break;
   case 'create':
   case 'mkdir':
-  //case 'symlink':
-  //case 'link':
-  //case 'mknod':
-  //case 'rename':
+  case 'symlink':
+  case 'mknod':
     call.fh = params[1];
     call.name = params[3];
     break;
+  case 'link':
+    call.fh = params[1];
+    call.fh2 = params[3];
+    call.name = params[5];
+    break;
+  //case 'rename':
+  //rename is ignored, because fh for the name doesn't appear
   default:
     logCall = false;
     break;
@@ -75,14 +89,13 @@ ExtractFhParent.prototype.processReply = function(row) {
     break;
   case 'lookup':
     if (status == 'OK') {
-      // TODO
+      records.push({ fh:params[1], name:call.name, parent:call.fh });
     }
     break;
   case 'readdirp':
     if (status == 'OK') {
       var currentIndex = 0, currentName = '';
-      for (var i = 0; i < params.length - 1; i += 2) {
-        var key = params[i], value = params[i + 1];
+      params.forEachKV(function(key, value) {
         if (key == 'name-' + currentIndex) {
           currentName = value;
         }
@@ -92,17 +105,20 @@ ExtractFhParent.prototype.processReply = function(row) {
           }
           ++currentIndex;
         }
-      }
+      });
     }
     break;
   case 'create':
   case 'mkdir':
-  //case 'symlink':
-  //case 'link':
-  //case 'mknod':
-  //case 'rename':
+  case 'symlink':
+  case 'mknod':
     if (status == 'OK') {
       records.push({ fh:params[1], name:call.name, parent:call.fh });
+    }
+    break;
+  case 'link':
+    if (status == 'OK') {
+      records.push({ fh:call.fh, name:call.name, parent:call.fh2 });
     }
     break;
   }
