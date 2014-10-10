@@ -820,7 +820,13 @@ int nfs_v3_print_resp (u_int32_t op, u_int32_t xid,
 						fprintf (OutFile, "cookie-%u ", name_cnt);
 						print_uint64_x ((u_int32_t *) &entry->cookie, NULL);
 
-						print_post_op_attr3_p (p, e, 1, name_cnt);
+						//XXX print_post_op_attr3_p expects network byte order, but entry is in host byte order
+						//print_post_op_attr3_p ((u_int32_t *) &entry->name_attributes, e, 1, name_cnt);
+
+						if (entry->name_handle.handle_follows) {
+							snprintf (BigBuf0, sizeof(BigBuf0), "fh-%u", name_cnt);
+							print_fh3_x (&entry->name_handle.post_op_fh3_u.handle, BigBuf0);
+						}
 
 						entry = entry->nextentry;
 						name_cnt++;
