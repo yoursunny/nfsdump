@@ -49,6 +49,7 @@
 #include "tcp.h"
 
 #include "nfsrecord.h"
+#include "tcp_reassembly.h"
 
 nfs_v3_stat_t	v3statsBlock;
 nfs_v2_stat_t	v2statsBlock;
@@ -156,6 +157,7 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 	unsigned int proto;
 	u_int32_t dir;
 	unsigned int cnt;
+	uint8_t *reassemblyBuffer = NULL; // free before return if not null
 
 	if (OutFile == NULL) {
 		OutFile = stdout;
@@ -235,8 +237,6 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 			return (0);
 		}
 
-		h_len += sizeof (u_int32_t);
-
 		src_port = ntohs (tcp_b->th_sport);
 		dst_port = ntohs (tcp_b->th_dport);
 
@@ -315,10 +315,65 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 		 */
 
 		if (proto == IPPROTO_TCP) {
-			rpc_len = ntohl (*(u_int32_t *)(pp + consumed));
-			rpc_len &= 0x7fffffff;
+			tcp_seq seq = ntohl (tcp_b->th_seq);
+			tcp_fragment_t *fragment = tcpLookup (record->secs, seq,
+					srcHost, src_port, dstHost, dst_port);
+			if (fragment == NULL) {
+				// first segment
+				rpc_len = ntohl (*(u_int32_t *)(pp + consumed));
+				rpc_len &= 0x7fffffff;
 
-			consumed += sizeof (u_int32_t);
+				h_len += sizeof (u_int32_t);
+				consumed += sizeof (u_int32_t);
+				size_t tcpPayloadLength = length - i_len - h_len; // exclude rpc_len field
+				seq += sizeof (uint32_t); // account of rpc_len field
+
+				if (rpc_len <= tcpPayloadLength) {
+					// sole segment
+					//fprintf (OutFile, "TCP sole segment %x\n", seq);
+				}
+				else {
+					// need more segments
+					if (rpc_len > 16384) { // message too large, reject
+						return -11;
+					}
+					uint8_t *buffer = (uint8_t *) malloc (rpc_len);
+					memcpy (buffer, pp + consumed, tcpPayloadLength);
+					tcpInsert (record->secs, seq + tcpPayloadLength,
+							srcHost, src_port, dstHost, dst_port,
+							buffer, rpc_len, seq);
+					//fprintf (OutFile, "TCP first segment %x\n", seq);
+					return -12;
+				}
+			}
+			else {
+				// subsequent segment
+				size_t tcpPayloadLength = length - i_len - h_len; // exclude rpc_len field
+				size_t firstOffset = seq - fragment->firstSeq;
+				size_t lastOffset = firstOffset + tcpPayloadLength;
+				if (lastOffset > fragment->rpc_len) {
+					// current TCP packet contains something other than RPC message
+					lastOffset = fragment->rpc_len;
+				}
+				memcpy (fragment->buffer + firstOffset, pp + consumed, lastOffset - firstOffset);
+				if (lastOffset == fragment->rpc_len) {
+					// RPC packet is complete
+					pp = reassemblyBuffer = fragment->buffer;
+					rpc_len = tot_len = fragment->rpc_len;
+					consumed = e_len = i_len = h_len = 0;
+					free (fragment);
+					//fprintf (OutFile, "TCP complete %x\n", seq);
+				}
+				else {
+					// need more segments
+					tcpInsert (record->secs, seq + tcpPayloadLength,
+							srcHost, src_port, dstHost, dst_port,
+							fragment->buffer, fragment->rpc_len, fragment->firstSeq);
+					free (fragment);
+					//fprintf (OutFile, "TCP subsequent %x\n", seq);
+					return -13;
+				}
+			}
 		}
 
 		rpc_b = (struct rpc_msg *) (pp + consumed);
@@ -330,10 +385,12 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 				fprintf (OutFile,
 					"XX rh_len == 0, cnt = %d\n", cnt);
 			}
+			if (reassemblyBuffer != NULL) free (reassemblyBuffer);
 			return (0);
 		}
 		else if (rh_len < 0) {
 /* 			fprintf (OutFile, "XX cnt = %d\n", cnt); */
+			if (reassemblyBuffer != NULL) free (reassemblyBuffer);
 			return (-5);
 		}
 
@@ -496,6 +553,7 @@ int processPacket (struct pcap_pkthdr *h,	/* Captured stuff */
 end:
 	/* fprintf (OutFile, "END %d\n", cnt); */
 
+	if (reassemblyBuffer != NULL) free (reassemblyBuffer);
 	return (1);
 }
 

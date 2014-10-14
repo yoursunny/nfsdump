@@ -59,7 +59,8 @@ INSTALL_DATA = @INSTALL_DATA@
 
 CSRC = nfsdump.c machdep.c \
 	util.c gmt2local.c setsignal.c \
-	nfsrecord.c nfs_v3.c nfs_v2.c nfs_prot_xdr.c mount_prot_xdr.c
+	nfsrecord.c nfs_v3.c nfs_v2.c nfs_prot_xdr.c mount_prot_xdr.c \
+	tcp_reassembly.c
 
 LOCALSRC = @LOCALSRC@
 GENSRC = version.c
