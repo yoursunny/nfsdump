@@ -52,6 +52,8 @@
 
 #include "nfsrecord.h"
 
+#include <gcrypt.h>
+
 #define	PRINT_STATUS(s, p)	\
 	if (p) { if ((s) == NFS3_OK) { fprintf (OutFile, "OK "); } \
 		else { fprintf (OutFile, "%x ", (s)); } \
@@ -1207,22 +1209,77 @@ u_int32_t *print_fn3 (u_int32_t *p, u_int32_t *e, int print)
 	return ((u_int32_t *) (str + tot_len));
 }
 
+void print_path_segment (char *str, size_t len)
+{
+	if (str [0] == '/') {
+		fprintf (OutFile, "/");
+		++str;
+		--len;
+	}
+	switch (len) {
+		case 0: return;
+		case 1:
+			if (str [0] == '.') {
+				fprintf (OutFile, ".");
+				return;
+			}
+			break;
+		case 2:
+			if (str [0] == '.' && str [1] == '.') {
+				fprintf (OutFile, "..");
+				return;
+			}
+			break;
+	}
+
+	// need SHA1
+	gcry_md_hd_t h;
+	int hash_alg = GCRY_MD_SHA1;
+	gcry_md_open (&h, hash_alg, 0);
+	gcry_md_write (h, str, len);
+	unsigned char *digest = gcry_md_read (h, hash_alg);
+	unsigned int digest_len = gcry_md_get_algo_dlen(hash_alg);
+	for (unsigned int i = 0; i < digest_len; ++i) {
+		fprintf (OutFile, "%02X", digest [i]);
+	}
+	gcry_md_close (h);
+}
+
 int print_string (char *str, size_t len)
 {
 	unsigned int i;
 	int c;
 
 	fprintf (OutFile, "\"");
-	for (i = 0; i < len; i++) {
-		c = str [i];
 
-		if (c == '"' || c == '\\' || isspace (c)) { 
-			fprintf (OutFile, "\\%.2x", 0xff & c);
-		}
-		else {
-			fprintf (OutFile, "%c", str [i]);
+	if (getenv("RAWNAMES")) {
+		for (i = 0; i < len; i++) {
+			c = str [i];
+
+			if (c == '"' || c == '\\' || isspace (c)) { 
+				fprintf (OutFile, "\\%.2x", 0xff & c);
+			}
+			else {
+				fprintf (OutFile, "%c", str [i]);
+			}
 		}
 	}
+	else {
+		unsigned int seg = 0;
+		for (i = 0; i < len; i++) {
+			c = str [i];
+			if (c == '/') {
+				if (i > 0) {
+					// str[seg..i-1] is a path segment
+					print_path_segment (str + seg, i - seg);
+				}
+				seg = i;
+			}
+		}
+		print_path_segment (str + seg, i - seg);
+	}
+
+
 	fprintf (OutFile, "\" ");
 
 	return (0);
