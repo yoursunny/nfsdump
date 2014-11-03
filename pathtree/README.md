@@ -2,6 +2,8 @@
 
 These scripts reconstruct the full path for each NFS request.
 
+Requirements: nodejs, gawk
+
 ## fhparent
 
 This tool parses `nfsdump` output, and extract filehandle-name-parent relations.
