@@ -2,7 +2,7 @@
 
 These scripts reconstruct the full path for each NFS request.
 
-Requirements: nodejs, gawk
+Requirements: nodejs, gawk, php-cli
 
 ## fhparent
 
@@ -61,3 +61,22 @@ Example (derived from fhparent example):
     77ad,9a65,C
     1fd1,9a65,C/D
 
+## clients
+
+This tool parses `nfsdump` output, and extract client IP address.
+
+Invocation:
+
+    bash clients.sh < x.nfsdump > x.clients
+
+The output is CSV format. Columns:
+
+1. client IP hex
+2. client IP textual representation
+
+Example:
+
+    c0a87e10,192.168.126.16
+    c0a87e11,192.168.126.17
+
+Note: It's necessary to ignore port numbers, because NFSv3 and MOUNTv3 use different port numbers.
