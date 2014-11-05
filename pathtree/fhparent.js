@@ -5,27 +5,11 @@
 var util = require('util');
 var stream = require('stream');
 var csv = require('csv');
+var nfsdump_func = require('./nfsdump.func.js')
+var fhparent_func = require('./fhparent.func.js')
 
-// [key1, value1, key2, value2, ...]
-Array.prototype.forEachKV = function(f) {
-  for (var i = 0; i < this.length - 1; i += 2) {
-    if (f(this[i], this[i + 1]) === false) {
-      return;
-    }
-  }
-};
-
-var OFFSET = {
-  TIME:0,
-  SRC:1,
-  DST:2,
-  DIRECTION:4,
-  XID:5,
-  OP:7,
-  PARAM_START:8,
-  STATUS:8,
-  RET_START:9,
-};
+var forEachKV = nfsdump_func.forEachKV;
+var OFFSET = nfsdump_func.OFFSET;
 
 function ExtractFhParent() {
   this.calls = {};
@@ -95,7 +79,7 @@ ExtractFhParent.prototype.processReply = function(row) {
   case 'readdirp':
     if (status == 'OK') {
       var currentIndex = 0, currentName = '';
-      params.forEachKV(function(key, value) {
+      forEachKV(params, function(key, value) {
         if (key == 'name-' + currentIndex) {
           currentName = value;
         }
@@ -127,7 +111,7 @@ ExtractFhParent.prototype.processReply = function(row) {
 
 var extractFhParent = new ExtractFhParent();
 
-var csvParser = csv.parse({ delimiter:' ', escape:'\\', ltrim:true });
+var csvParser = nfsdump_func.makeCsvParser();
 var csvTransform = csv.transform(function(row, cb){
   if (row.length < OFFSET.PARAM_START) {
     cb(null);
@@ -146,6 +130,5 @@ var csvTransform = csv.transform(function(row, cb){
     break;
   }
 }, { parallel:1 });
-var csvStringifier = csv.stringify({ columns:['fh','name','parent'] });
+var csvStringifier = fhparent_func.makeCsvStringifier();
 process.stdin.pipe(csvParser).pipe(csvTransform).pipe(csvStringifier).pipe(process.stdout);
-

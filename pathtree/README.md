@@ -87,7 +87,7 @@ This tool parses `nfsdump` output, and reconstruct operations from a particular 
 
 Invocation:
 
-    nodejs operations.js x.nfsdump x.fullpath clientIP-hex
+    nodejs operations.js x.fullpath clientIP-hex < x.nfsdump > x.clientIP.operations
 
 The output is CSV format. Columns:
 
