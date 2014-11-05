@@ -32,7 +32,7 @@ function ExtractFhParent() {
 }
 
 ExtractFhParent.prototype.processCall = function(row) {
-  var xid = row[OFFSET.XID], op = row[OFFSET.OP], params = row.slice(OFFSET.PARAM_START);
+  var client = row[OFFSET.SRC], xid = row[OFFSET.XID], op = row[OFFSET.OP], params = row.slice(OFFSET.PARAM_START);
   var call = { op:op }, logCall = true;
 
   switch (op) {
@@ -66,19 +66,19 @@ ExtractFhParent.prototype.processCall = function(row) {
   }
 
   if (logCall) {
-    this.calls[xid] = call;
+    this.calls[client + '.' + xid] = call;
   }
 
   return null;
 };
 
 ExtractFhParent.prototype.processReply = function(row) {
-  var xid = row[OFFSET.XID], op = row[OFFSET.OP], status = row[OFFSET.STATUS], params = row.slice(OFFSET.RET_START);
-  var call = this.calls[xid];
+  var client = row[OFFSET.DST], xid = row[OFFSET.XID], op = row[OFFSET.OP], status = row[OFFSET.STATUS], params = row.slice(OFFSET.RET_START);
+  var call = this.calls[client + '.' + xid];
   if (!call) {
     return [];
   }
-  delete this.calls[xid];
+  delete this.calls[client + '.' + xid];
   var records = [];
 
   switch (op) {
