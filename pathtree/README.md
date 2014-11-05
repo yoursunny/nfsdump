@@ -80,3 +80,26 @@ Example:
     c0a87e11,192.168.126.17
 
 Note: It's necessary to ignore port numbers, because NFSv3 and MOUNTv3 use different port numbers.
+
+## operations
+
+This tool parses `nfsdump` output, and reconstruct operations from a particular client.
+
+Invocation:
+
+    nodejs operations.js x.nfsdump x.fullpath clientIP-hex
+
+The output is CSV format. Columns:
+
+1. timestamp (start time)
+2. operation, one of: attr, readlink, read, write, dir, setattr, create, mkdir, symlink, remove, rmdir, rename
+3. full name
+4. (read/write only) file version
+5. (read/write only) segment start
+6. (read/write only) segment count
+
+File version is the mtime before read/write operation starts, as observed by the client.
+
+Each segment is 4096 octets.
+Reading/writing any portion of a segment is converted to reading/writing the whole segment.
+Multiple consequtive read/write operations on sequential range are merged and shown as one operation.
