@@ -3,7 +3,6 @@
 // stdout: CSV fh,name,parent
 
 var util = require('util');
-var stream = require('stream');
 var csv = require('csv');
 var nfsdump_func = require('./nfsdump.func.js')
 var fhparent_func = require('./fhparent.func.js')
@@ -11,81 +10,37 @@ var fhparent_func = require('./fhparent.func.js')
 var forEachKV = nfsdump_func.forEachKV;
 var OFFSET = nfsdump_func.OFFSET;
 
-function ExtractFhParent() {
-  this.calls = {};
+function ExtractFhParent(csvStringifier) {
+  this.csvStringifier = csvStringifier;
+  nfsdump_func.Parser.call(this);
 }
+util.inherits(ExtractFhParent, nfsdump_func.Parser);
 
-ExtractFhParent.prototype.processCall = function(row) {
-  var client = row[OFFSET.SRC], xid = row[OFFSET.XID], op = row[OFFSET.OP], params = row.slice(OFFSET.PARAM_START);
-  var call = { op:op }, logCall = true;
-
-  switch (op) {
-  case 'mnt':
-    call.dirpath = params[0];
-    break;
-  case 'lookup':
-    call.fh = params[1];
-    call.name = params[3];
-    break;
-  case 'readdirp':
-    call.fh = params[1];
-    break;
-  case 'create':
-  case 'mkdir':
-  case 'symlink':
-  case 'mknod':
-    call.fh = params[1];
-    call.name = params[3];
-    break;
-  case 'link':
-    call.fh = params[1];
-    call.fh2 = params[3];
-    call.name = params[5];
-    break;
-  //case 'rename':
-  //rename is ignored, because fh for the name doesn't appear
-  default:
-    logCall = false;
-    break;
-  }
-
-  if (logCall) {
-    this.calls[client + '.' + xid] = call;
-  }
-
-  return null;
-};
-
-ExtractFhParent.prototype.processReply = function(row) {
-  var client = row[OFFSET.DST], xid = row[OFFSET.XID], op = row[OFFSET.OP], status = row[OFFSET.STATUS], params = row.slice(OFFSET.RET_START);
-  var call = this.calls[client + '.' + xid];
-  if (!call) {
-    return [];
-  }
-  delete this.calls[client + '.' + xid];
-  var records = [];
+ExtractFhParent.prototype.process = function(op, call, reply) {
+  var status = reply[OFFSET.STATUS], callp = call.slice(OFFSET.PARAM_START), replyp = reply.slice(OFFSET.RET_START);
+  var sink = this.csvStringifier;
 
   switch (op) {
   case 'mnt':
     if (status == 'OK') {
-      records.push({ fh:params[1], name:call.dirpath, parent:'MOUNTPOINT' });
+      sink.write({ fh:replyp[1], name:callp[0], parent:'MOUNTPOINT' });
     }
     break;
   case 'lookup':
     if (status == 'OK') {
-      records.push({ fh:params[1], name:call.name, parent:call.fh });
+      sink.write({ fh:replyp[1], name:callp[3], parent:callp[1] });
     }
     break;
   case 'readdirp':
     if (status == 'OK') {
       var currentIndex = 0, currentName = '';
-      forEachKV(params, function(key, value) {
+      forEachKV(replyp, function(key, value) {
         if (key == 'name-' + currentIndex) {
           currentName = value;
         }
         else if (key == 'fh-' + currentIndex) {
           if (currentName != '.' && currentName != '..') {
-            records.push({ fh:value, name:currentName, parent:call.fh });
+            sink.write({ fh:value, name:currentName, parent:callp[1] });
           }
           ++currentIndex;
         }
@@ -97,38 +52,22 @@ ExtractFhParent.prototype.processReply = function(row) {
   case 'symlink':
   case 'mknod':
     if (status == 'OK') {
-      records.push({ fh:params[1], name:call.name, parent:call.fh });
+      sink.write({ fh:replyp[1], name:callp[3], parent:callp[1] });
     }
     break;
   case 'link':
     if (status == 'OK') {
-      records.push({ fh:call.fh, name:call.name, parent:call.fh2 });
+      sink.write({ fh:callp[1], name:callp[5], parent:callp[3] });
     }
     break;
+  //case 'rename':
+  //rename is ignored, because fh for the name doesn't appear
   }
-  return records;
 };
 
-var extractFhParent = new ExtractFhParent();
-
-var csvParser = nfsdump_func.makeCsvParser();
-var csvTransform = csv.transform(function(row, cb){
-  if (row.length < OFFSET.PARAM_START) {
-    cb(null);
-    return;
-  }
-
-  switch (row[OFFSET.DIRECTION]) {
-  case 'C3':
-    extractFhParent.processCall(row);
-    cb(null);
-    break;
-  case 'R3':
-    var records = extractFhParent.processReply(row);
-    records.unshift(null);
-    cb.apply(undefined, records);
-    break;
-  }
-}, { parallel:1 });
 var csvStringifier = fhparent_func.makeCsvStringifier();
-process.stdin.pipe(csvParser).pipe(csvTransform).pipe(csvStringifier).pipe(process.stdout);
+csvStringifier.pipe(process.stdout);
+
+var extractFhParent = new ExtractFhParent(csvStringifier);
+
+extractFhParent.parseFile(process.stdin, function(){});
