@@ -1,13 +1,26 @@
 var csv = require('csv');
 
 // [key1, value1, key2, value2, ...]
-exports.forEachKV = function(arr, f) {
+function forEachKV(arr, f) {
   for (var i = 0; i < arr.length - 1; i += 2) {
     if (f(arr[i], arr[i + 1]) === false) {
       return;
     }
   }
 };
+exports.forEachKV = forEachKV;
+
+function getKV(arr, key) {
+  var value = undefined;
+  forEachKV(arr, function(k, v){
+    if (k == key) {
+      value = v;
+      return false;
+    }
+  });
+  return value;
+};
+exports.getKV = getKV;
 
 var OFFSET = {
   TIME:0,
@@ -29,9 +42,7 @@ exports.makeCsvParser = makeCsvParser;
 
 
 function Parser(options) {
-  if (!options) {
-    options = {};
-  }
+  options = options || {};
 
   this.calls = {};
 
@@ -64,7 +75,9 @@ Parser.prototype.processRow = function(row) {
 
   switch (row[OFFSET.DIRECTION]) {
   case 'C3':
-    this.processCall(row);
+    if (this.filterCall(row)) {
+      this.processCall(row);
+    }
     break;
   case 'R3':
     this.processReply(row);
@@ -73,7 +86,7 @@ Parser.prototype.processRow = function(row) {
 };
 
 // override to process a subset of rows
-Parser.prototype.filter = function(row) {
+Parser.prototype.filterCall = function(row) {
   return true;
 };
 

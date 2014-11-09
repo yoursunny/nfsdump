@@ -10,25 +10,28 @@ var fhparent_func = require('./fhparent.func.js')
 var forEachKV = nfsdump_func.forEachKV;
 var OFFSET = nfsdump_func.OFFSET;
 
-function ExtractFhParent(csvStringifier) {
+function ExtractFhParent(csvStringifier, options) {
+  nfsdump_func.Parser.call(this, options);
   this.csvStringifier = csvStringifier;
-  nfsdump_func.Parser.call(this);
 }
 util.inherits(ExtractFhParent, nfsdump_func.Parser);
 
+ExtractFhParent.prototype.record = function(outputRow) {
+  this.csvStringifier.write(outputRow);
+};
+
 ExtractFhParent.prototype.process = function(op, call, reply) {
   var status = reply[OFFSET.STATUS], callp = call.slice(OFFSET.PARAM_START), replyp = reply.slice(OFFSET.RET_START);
-  var sink = this.csvStringifier;
 
   switch (op) {
   case 'mnt':
     if (status == 'OK') {
-      sink.write({ fh:replyp[1], name:callp[0], parent:'MOUNTPOINT' });
+      this.record({ fh:replyp[1], name:callp[0], parent:'MOUNTPOINT' });
     }
     break;
   case 'lookup':
     if (status == 'OK') {
-      sink.write({ fh:replyp[1], name:callp[3], parent:callp[1] });
+      this.record({ fh:replyp[1], name:callp[3], parent:callp[1] });
     }
     break;
   case 'readdirp':
@@ -40,11 +43,11 @@ ExtractFhParent.prototype.process = function(op, call, reply) {
         }
         else if (key == 'fh-' + currentIndex) {
           if (currentName != '.' && currentName != '..') {
-            sink.write({ fh:value, name:currentName, parent:callp[1] });
+            this.record({ fh:value, name:currentName, parent:callp[1] });
           }
           ++currentIndex;
         }
-      });
+      }.bind(this));
     }
     break;
   case 'create':
@@ -52,12 +55,12 @@ ExtractFhParent.prototype.process = function(op, call, reply) {
   case 'symlink':
   case 'mknod':
     if (status == 'OK') {
-      sink.write({ fh:replyp[1], name:callp[3], parent:callp[1] });
+      this.record({ fh:replyp[1], name:callp[3], parent:callp[1] });
     }
     break;
   case 'link':
     if (status == 'OK') {
-      sink.write({ fh:callp[1], name:callp[5], parent:callp[3] });
+      this.record({ fh:callp[1], name:callp[5], parent:callp[3] });
     }
     break;
   //case 'rename':
@@ -69,5 +72,4 @@ var csvStringifier = fhparent_func.makeCsvStringifier();
 csvStringifier.pipe(process.stdout);
 
 var extractFhParent = new ExtractFhParent(csvStringifier);
-
 extractFhParent.parseFile(process.stdin, function(){});
