@@ -4,6 +4,8 @@ These scripts reconstruct the full path for each NFS request.
 
 Requirements: nodejs, gawk, php-cli
 
+Installation: `npm install csv`
+
 ## fhparent
 
 This tool parses `nfsdump` output, and extract filehandle-name-parent relations.
@@ -41,7 +43,7 @@ This tool reads `fhparent` output, and derives full path for each filehandle.
 
 Invocation:
 
-    (undecided)
+    nodejs fullpath.js < x.fhparent > x.fullpath
 
 The output is CSV format. Columns:
 

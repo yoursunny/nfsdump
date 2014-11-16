@@ -1,6 +1,6 @@
 var csv = require('csv');
 
-var columns = ['fh','name','parent'];
+var columns = ['fh', 'name', 'parent'];
 exports.columns = columns;
 
 function makeCsvParser() {

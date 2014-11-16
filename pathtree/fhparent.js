@@ -3,7 +3,6 @@
 // stdout: CSV fh,name,parent
 
 var util = require('util');
-var csv = require('csv');
 var nfsdump_func = require('./nfsdump.func.js')
 var fhparent_func = require('./fhparent.func.js')
 

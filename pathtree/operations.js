@@ -5,7 +5,6 @@
 
 var util = require('util');
 var fs = require('fs');
-var csv = require('csv');
 var nfsdump_func = require('./nfsdump.func.js')
 var fullpath_func = require('./fullpath.func.js')
 var operations_func = require('./operations.func.js')
