@@ -11,4 +11,5 @@ nfsdump2/mount_prot_clnt.c
 nfsdump2/mount_prot_svc.c
 nfsdump2/mount_prot_xdr.c
 nfsdump2/version.c
-node_modules
+pathtree/node_modules
+pathtree/fullpath

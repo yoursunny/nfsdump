@@ -41,9 +41,13 @@ This means:
 
 This tool reads `fhparent` output, and derives full path for each filehandle.
 
-Invocation:
+Invocation NodeJS version:
 
     nodejs fullpath.js < x.fhparent > x.fullpath
+
+Invocation C++ version:
+
+    cat x.fhparent | tr ',' '\t' | ./fullpath > x.fullpath
 
 The output is CSV format. Columns:
 

@@ -73,9 +73,6 @@ function writeResults() {
   Object.keys(relations).forEach(function(fh){
     var p = constructPath(fh);
     p.fh = fh;
-    if (p.path.charAt(p.path.length - 1) == '/') {
-      p.path = p.path.substr(0, p.path.length - 1);
-    }
     csvStringifier.write(p);
     incrementProgress()
   });
