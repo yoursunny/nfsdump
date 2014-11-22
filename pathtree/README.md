@@ -100,12 +100,31 @@ The output is CSV format. Columns:
 1. timestamp (start time)
 2. operation, one of: attr, readlink, read, write, dir, setattr, create, mkdir, symlink, remove, rmdir, rename
 3. full name
-4. (read/write only) file version
-5. (read/write only) segment start
-6. (read/write only) segment count
+4. (read/write/readdir only) file version
+5. (read/write only) offset as integer; (readdir only) cookie as hex
+6. (read/write only) count as integer; (readdir only) directory entry count as integer
 
 File version is the mtime before read/write operation starts, as observed by the client.
+
+## rwmerge
+
+This tool merges consecutive read/write/readdir operations in `operations` output.
+
+Invocation:
+
+    nodejs rwmerge.js < x.clientIP.operations > x.clientIP.ops
 
 Each segment is 4096 octets.
 Reading/writing any portion of a segment is converted to reading/writing the whole segment.
 Multiple consequtive read/write operations on sequential range are merged and shown as one operation.
+
+The output is CSV format. Columns:
+
+1. timestamp (start time)
+2. operation, one of: attr, readlink, read, write, dir, setattr, create, mkdir, symlink, remove, rmdir, rename
+3. full name
+4. (read/write/readdir only) file version
+5. (read/write) segment start; (readdir only) segment start, always 0
+6. (read/write/readdir only) segment count
+
+File version is the mtime before read/write operation starts, as observed by the client.

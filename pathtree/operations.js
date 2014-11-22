@@ -9,6 +9,7 @@ var nfsdump_func = require('./nfsdump.func.js')
 var fullpath_func = require('./fullpath.func.js')
 var operations_func = require('./operations.func.js')
 
+var forEachKV = nfsdump_func.forEachKV;
 var getKV = nfsdump_func.getKV;
 var OFFSET = nfsdump_func.OFFSET;
 
@@ -49,7 +50,6 @@ ExtractOperations.prototype.process = function(op, call, reply) {
     this.record(fields);
   }.bind(this);
 
-  // TODO track mtime of every file, to serve as file version
   switch (op) {
   case 'getattr':
     record({ name:this.getFullPath(callp[1]) });
@@ -64,20 +64,24 @@ ExtractOperations.prototype.process = function(op, call, reply) {
     record({ name:this.getFullPath(callp[1]) });
     break;
   case 'read':
-    // TODO merge consequtive reads
-    record({ name:this.getFullPath(callp[1]), version:'TODO',
+    record({ name:this.getFullPath(callp[1]), version:getKV(replyp, 'mtime'),
              start:parseInt('0x' + callp[3]), count:parseInt('0x' + getKV(replyp, 'count')) });
     break;
   case 'write':
-    // TODO merge consequtive writes
-    record({ name:this.getFullPath(callp[1]), version:'TODO',
+    record({ name:this.getFullPath(callp[1]), version:getKV(replyp, 'mtime'),
              start:parseInt('0x' + callp[3]), count:parseInt('0x' + getKV(replyp, 'count')) });
     break;
   //case 'readdir':
   //  break;
   case 'readdirp':
-    // TODO record only if cookie!=0, and count number of response segments
-    record({ name:this.getFullPath(callp[1]) });
+    var fileEntryCount = 0;
+    forEachKV(replyp, function(k, v){
+      if (k.substr(0, 5) == 'name-') {
+        ++fileEntryCount;
+      }
+    });
+    record({ name:this.getFullPath(callp[1]), version:getKV(replyp, 'mtime'),
+             start:callp[3], count:fileEntryCount });
     break;
   case 'setattr':
     record({ name:this.getFullPath(callp[1]) });
