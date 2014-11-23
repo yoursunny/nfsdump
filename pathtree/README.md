@@ -67,6 +67,20 @@ Example (derived from fhparent example):
     77ad,9a65,C
     1fd1,9a65,C/D
 
+## fullpath-svc
+
+This tool is a lookup service for fullpath records.
+
+Invocation:
+
+    ./fullpath-svc < x.fullpath
+
+The program reads the .fullpath file into memory, and listens on `fullpath-svc.sock` UNIX socket.
+
+One client can connect at a time.
+Filehandles are written into the socket one per line, and lookup result is returned on the socket.
+If a filehandle is not found, it's echoed back.
+
 ## clients
 
 This tool parses `nfsdump` output, and extract client IP address.

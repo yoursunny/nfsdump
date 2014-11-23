@@ -13,3 +13,4 @@ nfsdump2/mount_prot_xdr.c
 nfsdump2/version.c
 pathtree/node_modules
 pathtree/fullpath
+pathtree/fullpath-svc
