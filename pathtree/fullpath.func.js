@@ -1,4 +1,5 @@
 var csv = require('csv');
+var net = require('net');
 
 var columns = ['fh', 'top', 'path'];
 exports.columns = columns;
@@ -16,20 +17,22 @@ exports.makeCsvStringifier = makeCsvStringifier;
 function defaultUnresolvedHandler(row) {
   return '/UNRESOLVED-' + row.top + '/' + row.path;
 }
+function makeUnresolvedHandler(option_unresolvedHandler) {
+  if (option_unresolvedHandler === false) {
+    return function(){ return false; };
+  }
+  else if (option_unresolvedHandler) {
+    return option_unresolvedHandler;
+  }
+  return defaultUnresolvedHandler;
+}
 
 // options.unresolvedHandler = function(row) {
 //   return path; // use a fake path
 //   return false; // skip this record
 // }
 function readAsMap(stream, options, cb) {
-  var unresolvedHandler = defaultUnresolvedHandler;
-  if (options.unresolvedHandler === false) {
-    unresolvedHandler = function(){ return false; };
-  }
-  else if (options.unresolvedHandler) {
-    unresolvedHandler = options.unresolvedHandler;
-  }
-
+  var unresolvedHandler = makeUnresolvedHandler(options.unresolvedHandler);
   var map = {}; // fh => path
   var processRow = function(row){
     if (row.top) {
@@ -56,3 +59,75 @@ function readAsMap(stream, options, cb) {
   stream.pipe(csvParser);
 }
 exports.readAsMap = readAsMap;
+
+// query fullpath from a map
+function mapQuerier(stream, options, readyCb) {
+  var that = this;
+  readAsMap(stream, options, function(map){
+    that.map = map;
+    readyCb();
+  });
+}
+mapQuerier.prototype.lookup = function(fh, cb) {
+  cb(this.map[fh]);
+};
+mapQuerier.prototype.close = function() {
+};
+exports.mapQuerier = mapQuerier;
+
+// query fullpath from a service
+function svcQuerier(socketOptions, options, readyCb) {
+  var that = this;
+
+  this.unresolvedHandler = makeUnresolvedHandler(options.unresolvedHandler);
+  this.buffer = '';
+  this.pending = {}; // fh=>[cb,...]
+
+  this.csvParser = makeCsvParser();
+  this.csvParser.on('readable', function(){
+    var row;
+    while (row = that.csvParser.read()) {
+      that.processResult(row);
+    }
+  });
+
+  this.sock = net.connect(socketOptions);
+  this.sock.setEncoding('utf8');
+  this.sock.on('connect', function(){
+    that.sock.pipe(that.csvParser);
+    readyCb();
+  });
+}
+svcQuerier.prototype.lookup = function(fh, cb) {
+  var callbacks = this.pending[fh];
+  if (!callbacks) {
+    callbacks = this.pending[fh] = [];
+  }
+  callbacks.push(cb);
+
+  this.sock.write(fh + '\n');
+};
+svcQuerier.prototype.processResult = function(row) {
+  var callbacks = this.pending[row.fh];
+  if (!callbacks) {
+    return;
+  }
+  delete this.pending[row.fh];
+
+  var path = false;
+  if (row.path) {
+    if (row.top == '') {
+      path = row.path;
+    }
+    else {
+      path = this.unresolvedHandler(row);
+    }
+  }
+  callbacks.forEach(function(cb){
+    cb(path);
+  });
+};
+svcQuerier.prototype.close = function() {
+  this.sock.end();
+};
+exports.svcQuerier = svcQuerier;

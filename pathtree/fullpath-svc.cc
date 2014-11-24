@@ -71,6 +71,6 @@ int
 main()
 {
   Table table = parseInput(std::cin);
-  serveForever(std::bind(&serveSocket, table, std::placeholders::_1));
+  serveForever(std::bind(&serveSocket, std::cref(table), std::placeholders::_1));
   return 0;
 }

@@ -1,5 +1,5 @@
 // operations.js: reconstruct operations from a particular client
-// argv: fullpath-file clientIP-hex
+// argv: clientIP-hex
 // stdin: nfsdump log
 // stdout: CSV fh,name,parent
 
@@ -13,9 +13,9 @@ var forEachKV = nfsdump_func.forEachKV;
 var getKV = nfsdump_func.getKV;
 var OFFSET = nfsdump_func.OFFSET;
 
-function ExtractOperations(fullpathMap, csvStringifier, options) {
+function ExtractOperations(fullpathQuerier, csvStringifier, options) {
   nfsdump_func.Parser.call(this, options);
-  this.fullpathMap = fullpathMap;
+  this.fullpathQuerier = fullpathQuerier;
   this.csvStringifier = csvStringifier;
 
   options = options || {};
@@ -24,9 +24,8 @@ function ExtractOperations(fullpathMap, csvStringifier, options) {
 }
 util.inherits(ExtractOperations, nfsdump_func.Parser);
 
-ExtractOperations.prototype.getFullPath = function(fh) {
-  var p = this.fullpathMap[fh];
-  return p || false;
+ExtractOperations.prototype.queryFullPath = function(fh, cb) {
+  this.fullpathQuerier.lookup(fh, cb);
 };
 
 ExtractOperations.prototype.filterCall = function(row) {
@@ -43,6 +42,18 @@ ExtractOperations.prototype.process = function(op, call, reply) {
 
   var record = function(fields) {
     if (!fields.name) {
+      if (fields.name_fh) {
+        this.queryFullPath(fields.name_fh, function(p){
+          if (!p) {
+            return;
+          }
+          fields.name = p;
+          if (fields.name_append) {
+            fields.name += '/' + fields.name_append;
+          }
+          record(fields);
+        });
+      }
       return;
     }
     fields.t = t;
@@ -52,23 +63,23 @@ ExtractOperations.prototype.process = function(op, call, reply) {
 
   switch (op) {
   case 'getattr':
-    record({ name:this.getFullPath(callp[1]) });
+    record({ name_fh:callp[1] });
     break;
   case 'lookup':
-    record({ name:this.getFullPath(replyp[1]) });
+    record({ name_fh:callp[1], name_append:callp[3] });
     break;
   case 'access':
-    record({ name:this.getFullPath(callp[1]) });
+    record({ name_fh:callp[1] });
     break;
   case 'readlink':
-    record({ name:this.getFullPath(callp[1]) });
+    record({ name_fh:callp[1] });
     break;
   case 'read':
-    record({ name:this.getFullPath(callp[1]), version:getKV(replyp, 'mtime'),
+    record({ name_fh:callp[1], version:getKV(replyp, 'mtime'),
              start:parseInt('0x' + callp[3]), count:parseInt('0x' + getKV(replyp, 'count')) });
     break;
   case 'write':
-    record({ name:this.getFullPath(callp[1]), version:getKV(replyp, 'mtime'),
+    record({ name_fh:callp[1], version:getKV(replyp, 'mtime'),
              start:parseInt('0x' + callp[3]), count:parseInt('0x' + getKV(replyp, 'count')) });
     break;
   //case 'readdir':
@@ -80,54 +91,40 @@ ExtractOperations.prototype.process = function(op, call, reply) {
         ++fileEntryCount;
       }
     });
-    record({ name:this.getFullPath(callp[1]), version:getKV(replyp, 'mtime'),
+    record({ name_fh:callp[1], version:getKV(replyp, 'mtime'),
              start:callp[3], count:fileEntryCount });
     break;
   case 'setattr':
-    record({ name:this.getFullPath(callp[1]) });
+    record({ name_fh:callp[1] });
     break;
   case 'create':
-    record({ name:this.getFullPath(replyp[1]) });
+    record({ name_fh:replyp[1] });
     break;
   case 'mkdir':
-    record({ name:this.getFullPath(replyp[1]) });
+    record({ name_fh:replyp[1] });
     break;
   case 'symlink':
-    record({ name:this.getFullPath(replyp[1]) });
+    record({ name_fh:replyp[1] });
     break;
   case 'remove':
-    var dirName = this.getFullPath(callp[1]);
-    if (dirName !== false) {
-      record({ name:dirName + '/' + callp[3] });
-    }
+    record({ name_fh:callp[1], name_append:callp[3] });
     break;
   case 'rmdir':
-    var dirName = this.getFullPath(callp[1]);
-    if (dirName !== false) {
-      record({ name:dirName + '/' + callp[3] });
-    }
+    record({ name_fh:callp[1], name_append:callp[3] });
     break;
   case 'rename':
-    var dirName = this.getFullPath(callp[1]);
-    if (dirName !== false) {
-      record({ name:dirName + '/' + callp[3] });
-    }
+    record({ name_fh:callp[1], name_append:callp[3] });
     break;
   }
 };
 
-var fullpathFile = process.argv[2];
-var fullpathMap;
-fullpath_func.readAsMap(fs.createReadStream(fullpathFile), {}, function(map){
-  fullpathMap = map;
-  run();
-});
+var fullpathQuerier = new fullpath_func.svcQuerier({ path:'fullpath-svc.sock' }, {}, run);
 
 var csvStringifier = operations_func.makeCsvStringifier();
 csvStringifier.pipe(process.stdout);
 
 var extractOperations;
 function run() {
-  extractOperations = new ExtractOperations(fullpathMap, csvStringifier, { client:process.argv[3] });
-  extractOperations.parseFile(process.stdin, function(){});
+  extractOperations = new ExtractOperations(fullpathQuerier, csvStringifier, { client:process.argv[3] });
+  extractOperations.parseFile(process.stdin, function(){ fullpathQuerier.close(); });
 }
