@@ -1,10 +1,10 @@
 // operations.js: reconstruct operations from a particular client
 // argv: clientIP-hex
 // stdin: nfsdump log
-// stdout: CSV fh,name,parent
+// stdout: CSV t,op,name,version,start,count
+//         unsorted
 
 var util = require('util');
-var fs = require('fs');
 var nfsdump_func = require('./nfsdump.func.js')
 var fullpath_func = require('./fullpath.func.js')
 var operations_func = require('./operations.func.js')
