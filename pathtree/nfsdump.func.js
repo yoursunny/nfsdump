@@ -54,18 +54,28 @@ function Parser(options) {
 exports.Parser = Parser;
 
 Parser.prototype.parseFile = function(stream, cb) {
-  var that = this;
-  var csvParser = makeCsvParser();
-  csvParser.on('readable', function(){
-    var row;
-    while (row = csvParser.read()) {
-      that.processRow(row);
-    }
-  });
-  csvParser.on('finish', function(){
+  this.csvParser = makeCsvParser();
+  this.csvParser.on('readable', this.readCsv.bind(this));
+  this.csvParser.on('finish', function(){
     cb();
   });
-  stream.pipe(csvParser);
+  stream.pipe(this.csvParser);
+};
+
+Parser.prototype.readCsv = function() {
+  var row;
+  while (!this.paused && (row = this.csvParser.read())) {
+    this.processRow(row);
+  }
+};
+
+Parser.prototype.pause = function() {
+  this.paused = true;
+};
+
+Parser.prototype.resume = function() {
+  this.paused = false;
+  this.readCsv();
 };
 
 Parser.prototype.processRow = function(row) {

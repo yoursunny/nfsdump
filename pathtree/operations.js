@@ -37,13 +37,16 @@ ExtractOperations.prototype.record = function(outputRow) {
 };
 
 ExtractOperations.prototype.process = function(op, call, reply) {
+  var that = this;
   var t = call[OFFSET.TIME], callp = call.slice(OFFSET.PARAM_START),
       status = reply[OFFSET.STATUS], replyp = reply.slice(OFFSET.RET_START);
 
   var record = function(fields) {
     if (!fields.name) {
       if (fields.name_fh) {
-        this.queryFullPath(fields.name_fh, function(p){
+        that.pause();
+        that.queryFullPath(fields.name_fh, function(p){
+          that.resume();
           if (!p) {
             return;
           }
@@ -58,8 +61,8 @@ ExtractOperations.prototype.process = function(op, call, reply) {
     }
     fields.t = t;
     fields.op = op;
-    this.record(fields);
-  }.bind(this);
+    that.record(fields);
+  };
 
   switch (op) {
   case 'getattr':
