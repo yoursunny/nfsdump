@@ -36,7 +36,7 @@ var OFFSET = {
 exports.OFFSET = OFFSET;
 
 function makeCsvParser() {
-  return csv.parse({ delimiter:' ', escape:'\\', ltrim:true });
+  return csv.parse({ delimiter:' ', escape:'\\', ltrim:true, relax_column_count:true });
 }
 exports.makeCsvParser = makeCsvParser;
 
