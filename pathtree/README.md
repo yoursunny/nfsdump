@@ -116,7 +116,7 @@ The output is CSV format. Columns:
 1. timestamp (start time)
 2. operation, one of: attr, readlink, read, write, dir, setattr, create, mkdir, symlink, remove, rmdir, rename
 3. full name
-4. (read/write/readdir only) file version (mtime)
+4. (except access/readlink/rename) file version (mtime or pre-mtime)
 5. (read/write only) offset as integer; (readdir only) cookie as hex
 6. (read/write only) count as integer; (readdir only) directory entry count as integer
 
@@ -137,8 +137,6 @@ The output is CSV format. Columns:
 1. timestamp (start time)
 2. operation, one of: attr, readlink, read, write, dir, setattr, create, mkdir, symlink, remove, rmdir, rename
 3. full name
-4. (read/write/readdir only) file version
+4. (except access/readlink/rename) file version (mtime or pre-mtime)
 5. (read/write) segment start; (readdir only) segment start, always 0
 6. (read/write/readdir only) segment count
-
-File version is the mtime before read/write operation starts, as observed by the client.

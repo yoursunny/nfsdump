@@ -32,7 +32,7 @@ RwMerge.prototype.reset = function(row){
   this.name = row.name;
   this.segments = {}; // seg=>timestamp
   this.dirCount = 0;
-  this.version = Infinity;
+  this.version = row.version || Infinity;
 };
 
 RwMerge.prototype.processRow = function(row){
@@ -78,7 +78,8 @@ RwMerge.prototype.recordOp = function(){
     this.recordReadDir();
     break;
   default:
-    this.csvStringifier.write({ t:this.t, op:this.op, name:this.name });
+    this.csvStringifier.write({ t:this.t, op:this.op, name:this.name,
+                                version:(this.version == Infinity ? 0 : this.version) });
     break;
   }
 };

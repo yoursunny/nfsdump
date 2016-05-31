@@ -46,7 +46,7 @@ ExtractOperations.prototype.process = function(op, call, reply) {
       if (fields.name_fh) {
         that.pause();
         that.queryFullPath(fields.name_fh, function(p){
-          that.resume();
+          process.nextTick(that.resume.bind(that));
           if (!p) {
             return;
           }
@@ -66,10 +66,10 @@ ExtractOperations.prototype.process = function(op, call, reply) {
 
   switch (op) {
   case 'getattr':
-    record({ name_fh:callp[1] });
+    record({ name_fh:callp[1], version:getKV(replyp, 'mtime') });
     break;
   case 'lookup':
-    record({ name_fh:callp[1], name_append:callp[3] });
+    record({ name_fh:callp[1], name_append:callp[3], version:getKV(replyp, 'mtime') });
     break;
   case 'access':
     record({ name_fh:callp[1] });
@@ -98,22 +98,22 @@ ExtractOperations.prototype.process = function(op, call, reply) {
              start:callp[3], count:fileEntryCount });
     break;
   case 'setattr':
-    record({ name_fh:callp[1] });
+    record({ name_fh:callp[1], version:getKV(replyp, 'pre-mtime') });
     break;
   case 'create':
-    record({ name_fh:replyp[1] });
+    record({ name_fh:replyp[1], version:getKV(replyp, 'mtime') });
     break;
   case 'mkdir':
-    record({ name_fh:replyp[1] });
+    record({ name_fh:replyp[1], version:getKV(replyp, 'mtime') });
     break;
   case 'symlink':
-    record({ name_fh:replyp[1] });
+    record({ name_fh:replyp[1], version:getKV(replyp, 'mtime') });
     break;
   case 'remove':
-    record({ name_fh:callp[1], name_append:callp[3] });
+    record({ name_fh:callp[1], name_append:callp[3], version:getKV(replyp, 'pre-mtime') });
     break;
   case 'rmdir':
-    record({ name_fh:callp[1], name_append:callp[3] });
+    record({ name_fh:callp[1], name_append:callp[3], version:getKV(replyp, 'pre-mtime') });
     break;
   case 'rename':
     record({ name_fh:callp[1], name_append:callp[3] });
@@ -128,6 +128,6 @@ csvStringifier.pipe(process.stdout);
 
 var extractOperations;
 function run() {
-  extractOperations = new ExtractOperations(fullpathQuerier, csvStringifier, { client:process.argv[3] });
+  extractOperations = new ExtractOperations(fullpathQuerier, csvStringifier, { client:process.argv[2] });
   extractOperations.parseFile(process.stdin, function(){ fullpathQuerier.close(); });
 }

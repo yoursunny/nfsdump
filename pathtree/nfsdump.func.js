@@ -50,15 +50,21 @@ function Parser(options) {
   this.callLifetime = options.callLifetime || 15;
   this.cleanupInterval = options.cleanupInterval || 60;
   this.nextCleanup = 0;
+  this.finished = false;
 }
 exports.Parser = Parser;
 
 Parser.prototype.parseFile = function(stream, cb) {
+  var that = this;
+  this.finishCb = cb;
+
   this.csvParser = makeCsvParser();
   this.csvParser.on('readable', this.readCsv.bind(this));
   this.csvParser.on('finish', function(){
-    cb();
+    that.finished = true;
+    that.readCsv();
   });
+
   stream.pipe(this.csvParser);
 };
 
@@ -66,6 +72,11 @@ Parser.prototype.readCsv = function() {
   var row;
   while (!this.paused && (row = this.csvParser.read())) {
     this.processRow(row);
+  }
+
+  if (this.finished && !this.paused) {
+    this.finishCb();
+    this.finished = false;
   }
 };
 

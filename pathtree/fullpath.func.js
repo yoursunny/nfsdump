@@ -4,8 +4,19 @@ var net = require('net');
 var columns = ['fh', 'top', 'path'];
 exports.columns = columns;
 
-function makeCsvParser() {
-  return csv.parse({ delimiter:',', escape:'\\', columns:columns });
+function makeCsvParser(needEndHack) {
+  var parser = csv.parse({ delimiter:',', escape:'\\', columns:columns, relax_column_count:true, skip_empty_lines:needEndHack || null });
+  if (needEndHack) {
+    // https://github.com/wdavidw/node-csv-parse/issues/96 workaround
+    parser.__write2 = parser.__write;
+    parser.__write = function(chars, end, callback) {
+      this.__write2(chars, false, callback);
+      if (end || (this.buf.length > 0 && this.buf.charAt(this.buf.length - 1) == '\n')) {
+        this.__write2('\n\n\n', end, function(){});
+      }
+    };
+  }
+  return parser;
 }
 exports.makeCsvParser = makeCsvParser;
 
@@ -83,7 +94,7 @@ function svcQuerier(socketOptions, options, readyCb) {
   this.buffer = '';
   this.pending = {}; // fh=>[cb,...]
 
-  this.csvParser = makeCsvParser();
+  this.csvParser = makeCsvParser(true);
   this.csvParser.on('readable', function(){
     var row;
     while (row = that.csvParser.read()) {
