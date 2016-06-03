@@ -140,3 +140,9 @@ The output is CSV format. Columns:
 4. (except access/readlink/rename) file version (mtime or pre-mtime)
 5. (read/write) segment start; (readdir only) segment start, always 0
 6. (read/write/readdir only) segment count
+
+## timeofday
+
+This tool extracts operations by time of day.
+
+See code comments for usage.
