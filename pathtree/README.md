@@ -12,7 +12,7 @@ This tool parses `nfsdump` output, and extract filehandle-name-parent relations.
 
 Invocation:
 
-    nodejs fhparent.js < x.nfsdump > x.fhparent
+    xzcat x.nfsdump.xz | nodejs fhparent.js > x.fhparent
 
 The output is CSV format. Columns:
 
@@ -87,7 +87,7 @@ This tool parses `nfsdump` output, and extract client IP address.
 
 Invocation:
 
-    bash clients.sh < x.nfsdump > x.clients
+    xzcat x.nfsdump.xz | bash clients.sh > x.clients
 
 The output is CSV format. Columns:
 
@@ -109,7 +109,7 @@ This tool parses `nfsdump` output, and reconstruct operations from a particular 
 
 Invocation:
 
-    nodejs operations.js clientIP-hex < x.nfsdump > x.clientIP.operations
+    xzcat x.nfsdump.xz | nodejs operations.js clientIP-hex > x.clientIP.operations
 
 The output is CSV format. Columns:
 
